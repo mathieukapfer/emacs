@@ -1,3 +1,6 @@
+(require 'my-grep "~/.emacs.d/my-grep.el")
+(require 'my-cpp-facilites "~/.emacs.d/my-cpp-facilites.el")
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -46,58 +49,53 @@
 ;; disable recursive mini-buffer
 (setq minibuffer-max-depth nil)
 
-;; edit .emacs
+;; edit init.el
 (defun switch-to-buffer-emacs ()
   (interactive)
-  (switch-to-buffer ".emacs" )
+  (find-file "~/.emacs.d/init.el")
+  ;;(switch-to-buffer "init.el" )
   )
+(global-set-key (kbd "M-C-œ") 'switch-to-buffer-emacs)
 
-;;(global-set-key (kbd "M-²") 'switch-to-buffer-emacs)
-
+;; simple dired content
+(require 'dired-x)
+(add-hook 'dired-mode-hook (lambda () (dired-omit-mode)))
 
 
 ;; shortcut for developement
 ;; ==========================
+;; basic F key bingind
 (global-set-key [f1] 'dired-sources-file)
 ;;(global-set-key [(control f1)] 'Info-elisp-ref)
 (global-set-key [f12] 'compile)
 (global-set-key [(control f12)] 'recompile)
 (global-set-key [f11] 'shell)
-
-;; Clear Dired (with omit file) 
-;; ==============================
-;;;; load the lib manually
-;;;; M x load-file /usr/share/emacs/23.4/lisp/dired-x.elc
+(global-set-key (kbd "<f9>") 'my-grep)
 
 (defun dired-sources-file ()
   (interactive)
-  ;;(dired "*.*[hcpm]")  
-  ;; (dired "*[^o~]")
   (dired default-directory)
   ;;(replace-in-string (buffer-file-name) "/[^/]+$" "/."))
 )
 
-
-
-;; Load Dired X when Dired is loaded.
-(require 'dired-x)
-(add-hook 'dired-mode-hook (lambda () (dired-omit-mode)))
-
-
-;; change shortcut
-;;; TODO : dammed , do not overwrite local mode shortcut
-(global-set-key (kbd "M-o") 'dired-omit-mode)
-
-;; split window shortcut
-;; ==========================
+;; split window helper in french keyboard
 (global-set-key (kbd "M-&") 'delete-other-windows ) 
 (global-set-key (kbd "M-é") 'split-window-vertically)
 (global-set-key (kbd "M-\"") 'split-window-horizontally)
  
 ;; windows navigation
-;; ==========================
 (global-set-key (kbd "C-<tab>") 'other-window)
-;; (global-set-key [(control tab)] 'other-window)
+
+;; Buffer navigation
+(load-file "~/.emacs.d/init-buffer-nagigation.el")
+
+;; related shortcut
+;;(global-set-key (kbd "C-<prior>") 'previous-user-buffer) ; Ctrl+PageDown
+;;(global-set-key (kbd "C-<next>")  'next-user-buffer) ; Ctrl+PageUp
+(global-set-key (kbd "M-<left>") 'previous-user-buffer) ; ALT+ flèche gauche 
+(global-set-key (kbd "M-<right>")  'next-user-buffer) ; ALT + flèche droite
+
+
 
 ;; grep facilities
 ;; ==================
@@ -113,29 +111,6 @@
 ;; find . \( -iname "test*" -o -name "*_sm.*" \) -prune -o \( -name "*.h" -o -name "*.cpp" -o -name "*.sm" \) -type f -print > files
 ;; ebrowse `cat files`
 
-;; file navigation - C language facilities
-;; =========================================
-(defun c++-open-complementary-source-file ()
-  (interactive)
-  (setq file-name (buffer-name))  
-  (setq base-file-name (car (split-string file-name "[.]")))
-  (setq complementary-file "")
-
-  (if (string-match "\.cpp$" file-name) 
-      (setq complementary-file (concat base-file-name ".h"))
-    (if (string-match "\.h$" file-name) 
-        (setq complementary-file (concat base-file-name ".cpp"))    
-      )
-    )
-  
-  (if (not(string= complementary-file ""))
-      (find-file complementary-file)
-    )
-  )
-
-(global-set-key (kbd "C-²" ) 'c++-open-complementary-source-file) 
-(global-set-key (kbd "C-œ" ) 'c++-open-complementary-source-file) 
-  
 
 ;; TAGS setting
 ;; ========================================
@@ -152,19 +127,6 @@
 
 (global-set-key (kbd "M-<f3>") 'find-tags-next)
 (global-set-key (kbd "M-<f4>") 'pop-tag-mark)
-
-;; ========================================
-
-
-;; Buffer navigation
-;; =========================================
-(load-file "~/.emacs.d/init-buffer-nagigation.el")
-
-;; related shortcut
-;;(global-set-key (kbd "C-<prior>") 'previous-user-buffer) ; Ctrl+PageDown
-;;(global-set-key (kbd "C-<next>")  'next-user-buffer) ; Ctrl+PageUp
-(global-set-key (kbd "M-<left>") 'previous-user-buffer) ; ALT+ flèche gauche 
-(global-set-key (kbd "M-<right>")  'next-user-buffer) ; ALT + flèche droite
 
 
 ;; ebrowse
