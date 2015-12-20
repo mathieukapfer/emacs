@@ -6,11 +6,14 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ansi-color-names-vector ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#ad7fa8" "#8cc4ff" "#eeeeec"])
+ '(ansi-color-names-vector
+   ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#ad7fa8" "#8cc4ff" "#eeeeec"])
  '(auto-save-default nil)
  '(c-basic-offset 2)
  '(dired-no-confirm (quote (print revert-subdirs)))
- '(dired-omit-extensions (quote ("_sm.*" ".in" ".a" ".class" ".lbin" ".bin" ".elc" ".obj" ".o" "CVS/" "CM/" ".svn/" "~" ".orig" ".rej" ".vrs" ".vr" ".tps" ".tp" ".pgs" ".pg" ".kys" ".ky" ".fns" ".fn" ".cps" ".cp" ".bbl" ".blg" ".glo" ".lot" ".lof" ".idx" ".dvi" ".aux" ".log" ".toc")))
+ '(dired-omit-extensions
+   (quote
+    ("_sm.*" ".in" ".a" ".class" ".lbin" ".bin" ".elc" ".obj" ".o" "CVS/" "CM/" ".svn/" "~" ".orig" ".rej" ".vrs" ".vr" ".tps" ".tp" ".pgs" ".pg" ".kys" ".ky" ".fns" ".fn" ".cps" ".cp" ".bbl" ".blg" ".glo" ".lot" ".lof" ".idx" ".dvi" ".aux" ".log" ".toc")))
  '(dired-omit-files "^\\.[^.]")
  '(dired-omit-regexps (quote ("\\`#" "\\`\\.[^.]" "\\`.*_sm\\.")))
  '(dired-use-ls-dired nil)
@@ -19,17 +22,33 @@
  '(fill-column 80)
  '(font-lock-mode t t (font-lock))
  '(graphviz-dot-view-command "xdot %s")
+ '(grep-find-ignored-directories my-grep-find-ignored-directories)
+ '(grep-find-ignored-files my-grep-find-ignored-files)
  '(indent-tabs-mode nil)
+ '(omnisharp-auto-complete-popup-help-delay 1)
+ '(omnisharp-imenu-support t)
+ '(send-mail-function (quote smtpmail-send-it))
+ '(show-paren-mode t)
+ '(smtpmail-smtp-server "smtp.laposte.net")
+ '(smtpmail-smtp-service 25)
  '(tab-width 2)
  '(tags-auto-read-changed-tag-files t)
  '(tags-build-completion-table t)
- '(tags-case-fold-search nil))
+ '(tags-case-fold-search nil)
+ '(tool-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "white" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
+ '(default ((t (:inherit nil :stipple nil :background "#555555" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
+
+
+(defun my-lookup-elisp ()
+  (interactive)
+  (elisp-index-search (my-default-entry)))
+
+(global-set-key (kbd "ESC <C-f1>") 'my-lookup-elisp)
 
 
 ;; space in C/C++ code

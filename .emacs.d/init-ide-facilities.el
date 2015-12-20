@@ -33,6 +33,7 @@
 ; Fix iedit bug in Mac
 (define-key global-map (kbd "C-c ;") 'iedit-mode)
 
+
 ;; FACILITES - STEP3: based on semantic
 ;; ================================================================================
 
@@ -97,3 +98,19 @@
 
 ;; Enable SRecode (Template management) minor-mode.
 ;; (global-srecode-minor-mode 1)
+
+
+;; FACILITES - STEP5: flycheck
+;; ================================================================================
+
+; start flymake-google-cpplint-load
+; let's define a function for flymake initialization
+(defun my:flymake-google-init () 
+  (require 'flymake-google-cpplint)
+  (custom-set-variables
+   '(flymake-google-cpplint-command "/usr/local/bin/cpplint"))
+  (flymake-google-cpplint-load)
+)
+(add-hook 'c-mode-hook 'my:flymake-google-init)
+(add-hook 'c++-mode-hook 'my:flymake-google-init)
+
