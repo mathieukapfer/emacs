@@ -43,6 +43,7 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :stipple nil :background "#555555" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
 
+(set-face-attribute 'default nil :height 110)
 
 (defun my-lookup-elisp ()
   (interactive)
