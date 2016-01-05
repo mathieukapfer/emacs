@@ -44,6 +44,9 @@
 (global-set-key (kbd "C-<f9>") 'semantic-symref-symbol)
 (global-set-key (kbd "M-<f9>") 'semantic-symref)
 
+(global-set-key (kbd "C-<f2>") 'semantic-ia-fast-jump)
+(global-set-key (kbd "C-<f3>") 'pop-global-mark)
+
 ;; let's define a function which adds semantic as a suggestion backend to auto complete
 ;; and hook this function to c-mode-common-hook
 (defun my:add-semantic-to-autocomplete() 
