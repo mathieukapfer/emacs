@@ -17,9 +17,12 @@
  '(dired-omit-files "^\\.[^.]")
  '(dired-omit-regexps (quote ("\\`#" "\\`\\.[^.]" "\\`.*_sm\\.")))
  '(dired-use-ls-dired nil)
- '(ede-project-directories (quote ("/home/math/Code/automake")))
+ '(ede-project-directories
+   (quote
+    ("/home/user/Qt5.5.1/5.5/Src/qtbase/src" "/home/user/Projects/ev_link_charger_hermes/code/evse/src" "/home/math/Code/automake")))
  '(ediff-coding-system-for-write (quote raw-text))
  '(fill-column 80)
+ '(flymake-google-cpplint-command (my:cpplint-command))
  '(font-lock-mode t t (font-lock))
  '(graphviz-dot-view-command "xdot %s")
  '(grep-find-ignored-directories my-grep-find-ignored-directories)
@@ -41,7 +44,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#555555" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
+ '(default ((t (:inherit nil :stipple nil :background "#606060" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
 
 (set-face-attribute 'default nil :height 110)
 
@@ -96,6 +99,8 @@
 ;; simple dired content
 (require 'dired-x)
 (add-hook 'dired-mode-hook (lambda () (dired-omit-mode)))
+;; and simplier shortcut
+(global-set-key (kbd "M-o") 'dired-omit-mode)
 
 
 ;; shortcut for developement

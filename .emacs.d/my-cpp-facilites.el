@@ -4,8 +4,10 @@
 ;; =========================================
 (defun c++-open-complementary-source-file ()
   (interactive)
-  (setq file-name (buffer-name))  
-  (setq base-file-name (car (split-string file-name "[.]")))
+  ;;(setq file-name (buffer-name))
+  (setq file-name (buffer-file-name))
+  ;; (setq base-file-name (car (split-string file-name "[.]")))
+  (setq base-file-name (file-name-sans-extension file-name))
   (setq complementary-file "")
 
   (if (string-match "\.cpp$" file-name) 
