@@ -1,4 +1,5 @@
 (provide 'my-cpp-facilites)
+(require 'cl)
 
 ;; Put in the alist a line like this:
 ;;  ("ext" . ( "toggle_ext_candidate1" "toggle_ext_candidate2" ) )

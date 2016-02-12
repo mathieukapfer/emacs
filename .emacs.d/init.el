@@ -1,5 +1,6 @@
 (require 'my-grep "~/.emacs.d/my-grep.el")
 (require 'my-cpp-facilites "~/.emacs.d/my-cpp-facilites.el")
+(require 'sr-speedbar "~/.emacs.d/sr-speedbar.el")
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -34,6 +35,8 @@
  '(show-paren-mode t)
  '(smtpmail-smtp-server "smtp.laposte.net")
  '(smtpmail-smtp-service 25)
+ '(speedbar-default-position (quote left))
+ '(sr-speedbar-right-side nil)
  '(tab-width 2)
  '(tags-auto-read-changed-tag-files t)
  '(tags-build-completion-table t)
