@@ -1,6 +1,6 @@
 (require 'my-grep "~/.emacs.d/my-grep.el")
 (require 'my-cpp-facilites "~/.emacs.d/my-cpp-facilites.el")
-(require 'sr-speedbar "~/.emacs.d/sr-speedbar.el")
+(require 'sr-speedbar)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
