@@ -1,0 +1,18 @@
+#include "TcpThread.h"
+
+void TcpThread::processClient() {
+  
+  std::cout << "wait for data from client" << std::endl;
+  client->waitForReadyRead();
+  numRead = client->readLine(_buf,sizeof(_buf)); 
+  std::cout << "data read:" << _buf << std::endl;
+  client->write("Echo:");
+  client->write(_buf);
+  client->write("\n");
+  client->waitForBytesWritten();
+}
+
+
+void TcpThread::run() {
+  processClient();
+}

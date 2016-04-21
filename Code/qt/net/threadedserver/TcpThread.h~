@@ -1,0 +1,17 @@
+#ifndef TCPTHREAD_H
+#define TCPTHREAD_H
+
+#include <QThread>
+#include <QTcpSocket>
+
+class TcpThread : public QThread
+{
+public:
+  TcpThread();
+  virtual ~TcpThread();
+
+
+};
+
+
+#endif /* TCPTHREAD_H */
