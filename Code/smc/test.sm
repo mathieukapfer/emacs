@@ -1,0 +1,27 @@
+%class   Test
+%header  Test.h
+%start   test::Init
+ //%include type_model.h
+
+%map test
+%%
+
+Init
+Entry
+{
+  sayHello("Init");
+}
+Exit
+{
+  sayGoodbye("Init");
+}
+{
+  leaveInit Finish {}  
+}
+
+Finish
+{
+  backToInit Init {} 
+}
+
+%%
