@@ -1,0 +1,26 @@
+%class   Test
+%header  Test.h
+%start   subtest::Void
+ //%include type_model.h
+
+%map subtest
+%%
+
+Void
+Entry
+{
+  sayHello("Void");
+}
+Exit
+{
+  sayGoodbye("Void");
+}
+{
+}
+
+ThisIsSubMap
+{
+  backToInit pop() {} 
+}
+
+%%
