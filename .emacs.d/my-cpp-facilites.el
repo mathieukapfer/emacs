@@ -12,22 +12,35 @@
    )
   )
 
+(defun my-toogle-path (dir-name)
+  (if (string-match "include/$" dir-name)
+      (replace-match "src/" t t dir-name)
+    (if (string-match "src/$" dir-name)
+        (replace-match "include/" t t dir-name)
+      )
+    )
+  )
+
 ;; Build toggle file name list 
 ;; Sample: with "foo.cpp" return the list ("foo.h" "foo.hpp")
 (defun my-toggle-header-body--get-file-name-list (a-file-name)
-  (let ( (the-base-name (file-name-sans-extension a-file-name)) )
+  (let ( (the-base-name (file-name-base a-file-name) )
+         (the-dir (file-name-directory a-file-name) )
+         )
     (cl-loop
      for ext in (cdr (assoc (file-name-extension a-file-name) my-head-body-table ) )
-     collect (concat the-base-name "." ext) )
+     collect (concat (my-toogle-path the-dir)  the-base-name "." ext)
+     collect (concat the-dir the-base-name "." ext)
+     )
     )
   )
 
 ;; Unit test
 ;; Type  C-x C-e at the end of each line
-(my-toggle-header-body--get-file-name-list "/etc/toto.cpp") ;; => ("/etc/toto.hpp" "/etc/toto.h")
-(my-toggle-header-body--get-file-name-list "toto.c")        ;; => ("toto.h")
-(my-toggle-header-body--get-file-name-list "toto.hpp")      ;; => ("toto.cpp")
-(my-toggle-header-body--get-file-name-list "toto.h")        ;; => ("toto.c" "toto.cpp")
+;(my-toggle-header-body--get-file-name-list "/etc/src/toto.cpp") ;; => ("/etc/toto.hpp" "/etc/toto.h")
+;(my-toggle-header-body--get-file-name-list "toto.c")        ;; => ("toto.h")
+;(my-toggle-header-body--get-file-name-list "toto.hpp")      ;; => ("toto.cpp")
+;(my-toggle-header-body--get-file-name-list "toto.h")        ;; => ("toto.c" "toto.cpp")
 
 ;; Main
 (defun my-toggle-header-body-main ()

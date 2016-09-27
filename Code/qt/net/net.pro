@@ -1,3 +1,3 @@
 TEMPLATE      = subdirs
 
-SUBDIRS += client server websocketclient websocketserver
+SUBDIRS += client server websocketclient websocketserver threadedserver		

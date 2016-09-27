@@ -22,6 +22,7 @@ void TcpServer::echo() {
     std::cout << "new Client!" << std::endl;
     client =_tcpServer->nextPendingConnection();
     std::cout << "wait for data from client" << std::endl;
+
     client->waitForReadyRead();
     numRead = client->readLine(_buf,sizeof(_buf)); 
     std::cout << "data read:" << _buf << std::endl;
@@ -48,16 +49,7 @@ void TcpServer::listen() {
             << "(IP:" << addr.toString().toStdString() << ")"
             << std::endl;
 
-#if 0
-  while(1) {
-    if(_tcpServer->waitForNewConnection(3000)) {
-      std::cout << "Client done" << std::endl;
-    } else {
-      std::cout << "waiting new client ...." << std::endl;
-    }
-  }
-#endif
-  
+
   //for(;;) {    
   //}
 

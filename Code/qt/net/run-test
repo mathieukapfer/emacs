@@ -7,8 +7,8 @@ LD_LIBRARY_PATH=$QT_DIR/lib ./server/server &
 sleep 1
 #netstat --tcp -ln | grep 8080
 echo ==== Start client =====
-LD_LIBRARY_PATH=$QT_DIR/lib ./client/client &
-LD_LIBRARY_PATH=$QT_DIR/lib ./client/client &
-LD_LIBRARY_PATH=$QT_DIR/lib ./client/client &
+#LD_LIBRARY_PATH=$QT_DIR/lib ./client/client &
+#LD_LIBRARY_PATH=$QT_DIR/lib ./client/client &
+LD_LIBRARY_PATH=$QT_DIR/lib ./client/client 
 sleep 1
 killall server

@@ -1,3 +1,49 @@
+;;(add-to-list 'semantic-lex-c-preprocessor-symbol-file
+;;             "/home/user/Projects/websocket_poc/webserver/enableQt.h")
+
+(ede-cpp-root-project "historic-driver"
+                      :name "historic-driver"
+                      :file "/home/user/Projects/EV_HISTORIC/07_drivers/Makefile"
+                      :include-path '(
+                                      "DriverADC"
+                                      "DriverBuzzer"
+                                      "DriverFP"
+                                      "DriverGPIO"
+                                      "DriverLed"
+                                      "DriverSC"
+                                      "DriverSPI-Switch"           
+                                      )
+                      :system-include-path '(
+                                             "/home/user/Projects/EV_HISTORIC/02_kernel/include"
+                                             )
+                      )
+
+(ede-cpp-root-project "dev-driver"
+                      :name "new-driver"
+                      :file "/home/user/Code/LKM/Makefile"
+                      :include-path '(
+                                      "."           
+                                      )
+                      :system-include-path '(
+                                             "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                             )
+                      :local-variables
+                       '((grep-command . "grep -nHi -e ")
+                         (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 34))
+                         )
+                      )
+
+(ede-cpp-root-project "new-driver"
+                      :name "new-driver"
+                      :file "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/Makefile"
+                      :include-path '(
+                                      "."           
+                                      )
+                      :system-include-path '(
+                                             "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                             )
+                      )
+
 (ede-cpp-root-project "websocket"
                       :name "websocket"
                       :file "/home/user/Projects/websocket_poc/webserver/README.md"
@@ -9,6 +55,7 @@
                                       "/src/OcppLib"
                                       "/src/OcppLib/Message"
                                       "/src/OcppLib/Websocket"
+                                      "/src/OcppLib/Websocket/WebsocketServerPrivate"
                                       "/src/OcppLib/tests"
                                       "/src/OcppLib/Soap"
                                       "/src/OcppLib/Json"
@@ -17,13 +64,17 @@
                       :system-include-path '(
                                              "/home/user/Projects/websocket_poc/webserver/externals/poco/x86/include"
                                              "/home/user/Projects/websocket_poc/webserver/externals/qt/x86/include" )
-    :compile-command "make compile"
+                      :compile-command "make compile"
+                      ;;:spp-files '("/enableQt.h")
     :spp-table '(
+                 ;; OcppLib
+                 ("ENABLE_QT" . "")
                  ;; QT
                  ("Q_CORE_EXPORT" . "")
                  ;; POCO
                  ("Net_API" ."")
                  ("Foundation_API" . "")
+                 ("Util_API" . "")
                  )
     )
 

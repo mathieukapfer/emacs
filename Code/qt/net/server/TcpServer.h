@@ -13,7 +13,6 @@ public:
   TcpServer(); 
   virtual ~TcpServer();
   void listen();
-
   bool isListening();
                      
 private slots:

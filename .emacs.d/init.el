@@ -11,16 +11,21 @@
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#ad7fa8" "#8cc4ff" "#eeeeec"])
  '(auto-save-default nil)
  '(c-basic-offset 2)
+ '(compilation-error-regexp-alist
+   (quote
+    (("^\\([[:digit:]]+\\)|\\([[:alnum:]_]+\\.[hcp]+\\):\\([[:digit:]]+\\):.*\\[\\(INFO\\|WARNING\\)?" 2 3 nil
+      (5 . 4))
+     absoft ada aix ant bash borland python-tracebacks-and-caml comma cucumber msft edg-1 edg-2 epc ftnchek iar ibm irix java jikes-file maven jikes-line gcc-include ruby-Test::Unit gnu lcc makepp mips-1 mips-2 msft omake oracle perl php rxp sparc-pascal-file sparc-pascal-line sparc-pascal-example sun sun-ada watcom 4bsd gcov-file gcov-header gcov-nomark gcov-called-line gcov-never-called perl--Pod::Checker perl--Test perl--Test2 perl--Test::Harness weblint)))
  '(dired-no-confirm (quote (print revert-subdirs)))
  '(dired-omit-extensions
    (quote
-    ("_sm.*" ".in" ".a" ".class" ".lbin" ".bin" ".elc" ".obj" ".o" "CVS/" "CM/" ".svn/" "~" ".orig" ".rej" ".vrs" ".vr" ".tps" ".tp" ".pgs" ".pg" ".kys" ".ky" ".fns" ".fn" ".cps" ".cp" ".bbl" ".blg" ".glo" ".lot" ".lof" ".idx" ".dvi" ".aux" ".log" ".toc")))
+    ("_sm.*" ".in" ".a" ".class" ".lbin" ".bin" ".elc" ".obj" ".o" "CVS/" "CM/" ".svn/" "~" ".orig" ".rej" ".vrs" ".vr" ".tps" ".tp" ".pgs" ".pg" ".kys" ".ky" ".fns" ".fn" ".cps" ".cp" ".bbl" ".blg" ".glo" ".lot" ".lof" ".idx" ".dvi" ".aux" ".toc")))
  '(dired-omit-files "^\\.[^.]")
  '(dired-omit-regexps (quote ("\\`#" "\\`\\.[^.]" "\\`.*_sm\\.")))
  '(dired-use-ls-dired nil)
  '(ede-project-directories
    (quote
-    ("/home/user/Qt5.5.1/5.5/Src/qtbase/src" "/home/user/Projects/ev_link_charger_hermes/code/evse/src" "/home/math/Code/automake")))
+    ("/home/user/Projects/ev_link_charger_hermes/code/evse/src")))
  '(ediff-coding-system-for-write (quote raw-text))
  '(fill-column 80)
  '(flymake-google-cpplint-command (my:cpplint-command))
@@ -47,7 +52,9 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#606060" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono")))))
+ '(default ((t (:inherit nil :stipple nil :background "#606060" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
+ '(font-lock-comment-face ((t (:foreground "gold"))))
+ '(magit-section-highlight ((t (:background "dim gray")))))
 
 (set-face-attribute 'default nil :height 110)
 
@@ -154,6 +161,10 @@
 ;; rm BROWSE
 ;; find . \( -iname "test*" -o -name "*_sm.*" \) -prune -o \( -name "*.h" -o -name "*.cpp" -o -name "*.sm" \) -type f -print > files
 ;; ebrowse `cat files`
+
+
+;; Git with maggit
+(global-set-key (kbd "C-<escape>") 'magit-status)
 
 
 ;; TAGS setting

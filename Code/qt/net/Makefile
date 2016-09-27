@@ -31,7 +31,8 @@ SUBTARGETS    =  \
 		sub-client \
 		sub-server \
 		sub-websocketclient \
-		sub-websocketserver
+		sub-websocketserver \
+		sub-threadedserver
 
 
 sub-client-qmake_all:  FORCE
@@ -134,6 +135,31 @@ sub-websocketserver-install_subtargets: FORCE
 sub-websocketserver-uninstall_subtargets: FORCE
 	@test -d websocketserver/ || mkdir -p websocketserver/
 	cd websocketserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/websocketserver/websocketserver.pro -o Makefile ) && $(MAKE) -f Makefile uninstall
+sub-threadedserver-qmake_all:  FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile
+	cd threadedserver/ && $(MAKE) -f Makefile qmake_all
+sub-threadedserver: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile
+sub-threadedserver-make_first: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile 
+sub-threadedserver-all: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile all
+sub-threadedserver-clean: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile clean
+sub-threadedserver-distclean: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile distclean
+sub-threadedserver-install_subtargets: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile install
+sub-threadedserver-uninstall_subtargets: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile uninstall
 
 Makefile: net.pro /usr/local/Qt-5.7.0/mkspecs/linux-g++/qmake.conf /usr/local/Qt-5.7.0/mkspecs/features/spec_pre.prf \
 		/usr/local/Qt-5.7.0/mkspecs/common/unix.conf \
@@ -251,15 +277,15 @@ net.pro:
 qmake: FORCE
 	@$(QMAKE) -o Makefile net.pro
 
-qmake_all: sub-client-qmake_all sub-server-qmake_all sub-websocketclient-qmake_all sub-websocketserver-qmake_all FORCE
+qmake_all: sub-client-qmake_all sub-server-qmake_all sub-websocketclient-qmake_all sub-websocketserver-qmake_all sub-threadedserver-qmake_all FORCE
 
-make_first: sub-client-make_first sub-server-make_first sub-websocketclient-make_first sub-websocketserver-make_first  FORCE
-all: sub-client-all sub-server-all sub-websocketclient-all sub-websocketserver-all  FORCE
-clean: sub-client-clean sub-server-clean sub-websocketclient-clean sub-websocketserver-clean  FORCE
-distclean: sub-client-distclean sub-server-distclean sub-websocketclient-distclean sub-websocketserver-distclean  FORCE
+make_first: sub-client-make_first sub-server-make_first sub-websocketclient-make_first sub-websocketserver-make_first sub-threadedserver-make_first  FORCE
+all: sub-client-all sub-server-all sub-websocketclient-all sub-websocketserver-all sub-threadedserver-all  FORCE
+clean: sub-client-clean sub-server-clean sub-websocketclient-clean sub-websocketserver-clean sub-threadedserver-clean  FORCE
+distclean: sub-client-distclean sub-server-distclean sub-websocketclient-distclean sub-websocketserver-distclean sub-threadedserver-distclean  FORCE
 	-$(DEL_FILE) Makefile
-install_subtargets: sub-client-install_subtargets sub-server-install_subtargets sub-websocketclient-install_subtargets sub-websocketserver-install_subtargets FORCE
-uninstall_subtargets: sub-client-uninstall_subtargets sub-server-uninstall_subtargets sub-websocketclient-uninstall_subtargets sub-websocketserver-uninstall_subtargets FORCE
+install_subtargets: sub-client-install_subtargets sub-server-install_subtargets sub-websocketclient-install_subtargets sub-websocketserver-install_subtargets sub-threadedserver-install_subtargets FORCE
+uninstall_subtargets: sub-client-uninstall_subtargets sub-server-uninstall_subtargets sub-websocketclient-uninstall_subtargets sub-websocketserver-uninstall_subtargets sub-threadedserver-uninstall_subtargets FORCE
 
 sub-client-check:
 	@test -d client/ || mkdir -p client/
@@ -273,7 +299,10 @@ sub-websocketclient-check:
 sub-websocketserver-check:
 	@test -d websocketserver/ || mkdir -p websocketserver/
 	cd websocketserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/websocketserver/websocketserver.pro -o Makefile ) && $(MAKE) -f Makefile check
-check: sub-client-check sub-server-check sub-websocketclient-check sub-websocketserver-check
+sub-threadedserver-check:
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -f Makefile check
+check: sub-client-check sub-server-check sub-websocketclient-check sub-websocketserver-check sub-threadedserver-check
 install:install_subtargets  FORCE
 
 uninstall: uninstall_subtargets FORCE
@@ -283,7 +312,7 @@ FORCE:
 dist: distdir FORCE
 	(cd `dirname $(DISTDIR)` && $(TAR) $(DISTNAME).tar $(DISTNAME) && $(COMPRESS) $(DISTNAME).tar) && $(MOVE) `dirname $(DISTDIR)`/$(DISTNAME).tar.gz . && $(DEL_FILE) -r $(DISTDIR)
 
-distdir: sub-client-distdir sub-server-distdir sub-websocketclient-distdir sub-websocketserver-distdir FORCE
+distdir: sub-client-distdir sub-server-distdir sub-websocketclient-distdir sub-websocketserver-distdir sub-threadedserver-distdir FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents /usr/local/Qt-5.7.0/mkspecs/features/spec_pre.prf /usr/local/Qt-5.7.0/mkspecs/common/unix.conf /usr/local/Qt-5.7.0/mkspecs/common/linux.conf /usr/local/Qt-5.7.0/mkspecs/common/sanitize.conf /usr/local/Qt-5.7.0/mkspecs/common/gcc-base.conf /usr/local/Qt-5.7.0/mkspecs/common/gcc-base-unix.conf /usr/local/Qt-5.7.0/mkspecs/common/g++-base.conf /usr/local/Qt-5.7.0/mkspecs/common/g++-unix.conf /usr/local/Qt-5.7.0/mkspecs/qconfig.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_bootstrap_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_clucene_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_concurrent.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_concurrent_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_core.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_core_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_dbus.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_dbus_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_gui.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_gui_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_help.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_help_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_network.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_network_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_packetprotocol_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_platformsupport_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_printsupport.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_printsupport_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_qml.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_qml_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_qmldebug_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_qmldevtools_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_sql.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_sql_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_testlib.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_testlib_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_websockets.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_websockets_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_widgets.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_widgets_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_xcb_qpa_lib_private.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_xml.pri /usr/local/Qt-5.7.0/mkspecs/modules/qt_lib_xml_private.pri /usr/local/Qt-5.7.0/mkspecs/features/qt_functions.prf /usr/local/Qt-5.7.0/mkspecs/features/qt_config.prf /usr/local/Qt-5.7.0/mkspecs/linux-g++/qmake.conf /usr/local/Qt-5.7.0/mkspecs/features/spec_post.prf /usr/local/Qt-5.7.0/mkspecs/features/exclusive_builds.prf /usr/local/Qt-5.7.0/mkspecs/features/default_pre.prf /usr/local/Qt-5.7.0/mkspecs/features/resolve_config.prf /usr/local/Qt-5.7.0/mkspecs/features/default_post.prf /usr/local/Qt-5.7.0/mkspecs/features/warn_on.prf /usr/local/Qt-5.7.0/mkspecs/features/testcase_targets.prf /usr/local/Qt-5.7.0/mkspecs/features/exceptions.prf /usr/local/Qt-5.7.0/mkspecs/features/yacc.prf /usr/local/Qt-5.7.0/mkspecs/features/lex.prf net.pro $(DISTDIR)/
 
@@ -302,4 +331,8 @@ sub-websocketclient-distdir: FORCE
 sub-websocketserver-distdir: FORCE
 	@test -d websocketserver/ || mkdir -p websocketserver/
 	cd websocketserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/websocketserver/websocketserver.pro -o Makefile ) && $(MAKE) -e -f Makefile distdir DISTDIR=$(DISTDIR)/websocketserver
+
+sub-threadedserver-distdir: FORCE
+	@test -d threadedserver/ || mkdir -p threadedserver/
+	cd threadedserver/ && ( test -e Makefile || $(QMAKE) /home/user/git/emacs/Code/qt/net/threadedserver/threadedserver.pro -o Makefile ) && $(MAKE) -e -f Makefile distdir DISTDIR=$(DISTDIR)/threadedserver
 

@@ -3,6 +3,8 @@
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonArray>
 
+#include <QtCore/QUuid>
+
 #define TEST_THIS(cmd) std::cout << #cmd << ":" << (cmd) << std::endl;
 
 
@@ -46,7 +48,7 @@ void Encode_(QJsonObject &obj, const std::string& p_key, const int& p_value) {
   obj[QString::fromStdString(p_key)] = p_value;
 }
 
-void Encode() {
+void EncodeObject() {
   QJsonObject msgBody;
   QJsonDocument doc;
   msgBody["chargeBoxSerialNumber"] = QString("123456");
@@ -56,10 +58,59 @@ void Encode() {
   doc.setObject(msgBody);
 
   TEST_THIS(doc.toJson().constData());
+
+  QString msgStr(doc.toJson());
+  for (int c=0; c < msgStr.size(); c++) { printf("%c", msgStr.toStdString().c_str()[c]); };
+
+}
+
+void EncodeArray() {
+  QJsonDocument doc;
+  QJsonArray msgArray;
+  QJsonObject val1{ {"prop1", 1 } };
+  QJsonObject val2{ {"prop2", 2 } };
+
+  msgArray.append(val1);
+  msgArray.append(val2);
+
+  doc.setArray(msgArray);
+
+  TEST_THIS(doc.toJson().constData());
+}
+
+static const int MESSAGE_TYPE_CALL = 1;
+
+bool send() {
+
+  const std::string p_action = "action";
+  QJsonObject p_payloadCall{ {"payloadCall", 1 } };
+  QJsonArray message;
+  //=====
+  QString uniqueId = QUuid::createUuid().toString();
+  QString action = QString::fromStdString(p_action);
+
+  message.append(QJsonValue(MESSAGE_TYPE_CALL));
+  message.append(QJsonValue(uniqueId)); // UniqueId
+  message.append(QJsonValue(action));   // Action
+  message.append(p_payloadCall);        // payload
+
+  QJsonDocument doc;
+  doc.setArray(message);
+  QString messageToString(doc.toJson());
+
+  //=====
+  TEST_THIS(messageToString.toStdString());
+
 }
 
 int main(int argc, char *argv[]) {
-  Decode();
-  Encode();
+  QJsonArray msgArray;
+  TEST_THIS(msgArray.size());
+  TEST_THIS(msgArray.isEmpty());
+
+  //Decode();
+  EncodeObject();
+  //EncodeArray();
+  //send();
   return 0;
 }

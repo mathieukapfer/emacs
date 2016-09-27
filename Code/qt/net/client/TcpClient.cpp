@@ -23,7 +23,7 @@ void TcpClient::tcpConnect(){
     std::cout <<_tcpSocket->errorString().toStdString() << std::endl;
     exit(0);
   } else {
-    std::cout << "connection done" << std::endl;
+    std::cout << "[client] connection done" << std::endl;
   }
   //_tcpSocket->waitForDisconnected();
 }
@@ -31,14 +31,14 @@ void TcpClient::tcpConnect(){
 void TcpClient::sayHello() {
 
   //_tcpSocket->waitForConnected();
-  std::cout << "client connected!" << std::endl;
+  std::cout << "[client] client connected!" << std::endl;
   _tcpSocket->write("Hello\n");
-  std::cout << " say hello ..." << std::endl;
+  std::cout << "[client] say hello ..." << std::endl;
   _tcpSocket->waitForBytesWritten();
-  std::cout << "Waiting echo ..." << std::endl;
+  std::cout << "[client] Waiting echo ..." << std::endl;
   _tcpSocket->waitForReadyRead();
   _tcpSocket->readLine(_buf,sizeof(_buf));
-  std::cout << "data read:" << _buf << std::endl;
+  std::cout << "[client] data read:" << _buf << std::endl;
   
 }
   
