@@ -3,31 +3,40 @@ bin_PROGRAMS = test
 # SMC path
 SMC_DIR=./smc_6_0_1
 
-# generate bin 
+# ======================
+# generate bin
+# ======================
+
+# SMC source files generation
 SM_SOURCES       = testA.sm testB.sm 
 
-testA.sm: test_prodA.sm test_common.sm 
-	cat $^ > $@
+testA.sm: test_prodA.sm test_common.sm
+	./merge.sh $^ > $@
 
 testB.sm: test_prodB.sm test_common.sm 
-	cat $^ > $@
+	./merge.sh $^ > $@
 
+# bin generation
 test_SOURCES = \
+	$(SM_SOURCES:.sm=_sm.cpp)  \
 	main.cpp \
 	Test.h Test.cpp \
-	$(SM_SOURCES:.sm=_sm.cpp)  \
 	TestA.h TestA.cpp \
 	TestB.h TestB.cpp
 
 test_CXXFLAGS= -I$(SMC_DIR)/lib/C++
 
-# generate SMC files
+# SMC files compilation
 SMC=java -jar $(SMC_DIR)/bin/Smc.jar
 SMC_FLAGS= -c++ -g -nostreams
 SMC_GRAPH_FLAGS= -graph -glevel 
 
 %_sm.h %_sm.cpp: %.sm
 	$(SMC) $(SMC_FLAGS) $<
+
+# ======================
+# helper
+# ======================
 
 # execute test
 run:test
