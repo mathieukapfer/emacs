@@ -7,14 +7,17 @@ Test::Test(){
 Test::~Test() {
 }
 
-void Test::sayHello(const char * who) {
-  printf("Hello %s\n", who);
+void Test::sayEntry(const char * who) {
+  printf("Entry %s\n", who);
 }
 
-void Test::sayGoodbye(const char * who) {
-  printf("Goodbye %s\n", who);
+void Test::sayExit(const char * who) {
+  printf("Exit %s\n", who);
 }
 
-void Test::say(const char * something) {
-  printf("%s\n", something);
+void Test::say(const char * something, bool newline) {
+  printf("%s", something);
+  if (newline) {
+    printf("\n");
+  }
 }

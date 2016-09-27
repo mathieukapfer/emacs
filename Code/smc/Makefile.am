@@ -4,16 +4,20 @@ bin_PROGRAMS = test
 SMC_DIR=./smc_6_0_1
 
 # generate bin 
-SM_SOURCES       = testA.sm 
+SM_SOURCES       = testA.sm testB.sm 
 
 testA.sm: test_prodA.sm test_common.sm 
+	cat $^ > $@
+
+testB.sm: test_prodB.sm test_common.sm 
 	cat $^ > $@
 
 test_SOURCES = \
 	main.cpp \
 	Test.h Test.cpp \
 	$(SM_SOURCES:.sm=_sm.cpp)  \
-	TestA.h TestA.cpp 
+	TestA.h TestA.cpp \
+	TestB.h TestB.cpp
 
 test_CXXFLAGS= -I$(SMC_DIR)/lib/C++
 
@@ -23,7 +27,7 @@ SMC_FLAGS= -c++ -g -nostreams
 SMC_GRAPH_FLAGS= -graph -glevel 
 
 %_sm.h %_sm.cpp: %.sm
-	$(SMC) $(SMC_FLAGS) $(SM_SOURCES)
+	$(SMC) $(SMC_FLAGS) $<
 
 # execute test
 run:test

@@ -1,27 +1,26 @@
-#ifndef TESTA_H
-#define TESTA_H
+#ifndef TESTB_H
+#define TESTB_H
 
 #include <stdarg.h>
 #include "Test.h"
 
 #define TRACE(...) printf(__VA_ARGS__)
-#include "testA_sm.h"
+#include "testB_sm.h"
 
-namespace ProdA { 
+namespace ProdB {
 
-class TestA : public Test {
+class TestB : public Test {
  public:
-  TestA();
-  virtual ~TestA();
+  TestB();
+  virtual ~TestB();
 
   // redefined services
   void sayEntry(const char * who);
   void sayExit(const char * who);
 
   // state machine and associated variable
-  testAContext _fsm;
+  testBContext _fsm;
 
 };
-
-} // namespace prodA
+}// namespace ProdB
 #endif /* TESTA_H */

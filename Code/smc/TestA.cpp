@@ -1,6 +1,8 @@
 #include "TestA.h"
 #include <stdio.h>
 
+namespace ProdA { 
+
 TestA::TestA():
   _fsm(*this) {
 }
@@ -8,10 +10,14 @@ TestA::TestA():
 TestA::~TestA() {
 }
 
-void TestA::sayHello(const char * who) {
-  printf("Hello %s\n", who);
+void TestA::sayEntry(const char * who) {
+  Test::say("[wrapped by TestA] ", false);
+  Test::sayEntry(who);
 }
 
-void TestA::sayGoodbye(const char * who) {
-  printf("Goodbye %s\n", who);
+void TestA::sayExit(const char * who) {
+  Test::say("[wrapped by TestA] ", false);
+  Test::sayExit(who);
+}
+
 }

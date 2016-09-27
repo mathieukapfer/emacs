@@ -7,9 +7,9 @@ class Test {
   virtual ~Test();
 
   // commun services
-  virtual void sayHello(const char * who);
-  virtual void sayGoodbye(const char * who);
-  virtual void say(const char * something);
+  virtual void sayEntry(const char * who);
+  virtual void sayExit(const char * who);
+  virtual void say(const char * something, bool newline = true);
 
 };
 #endif /* TEST_H */
