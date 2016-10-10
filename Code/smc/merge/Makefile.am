@@ -1,7 +1,7 @@
-bin_PROGRAMS = test
+bin_PROGRAMS = testmerge
 
 # SMC path
-SMC_DIR=./smc_6_0_1
+SMC_DIR=../smc_6_0_1
 
 # ======================
 # generate bin
@@ -17,14 +17,14 @@ testB.sm: test_prodB.sm test_common.sm
 	./merge.sh $^ > $@
 
 # bin generation
-test_SOURCES = \
+testmerge_SOURCES = \
 	$(SM_SOURCES:.sm=_sm.cpp)  \
 	main.cpp \
 	Test.h Test.cpp \
 	TestA.h TestA.cpp \
 	TestB.h TestB.cpp
 
-test_CXXFLAGS= -I$(SMC_DIR)/lib/C++
+testmerge_CXXFLAGS= -I$(SMC_DIR)/lib/C++
 
 # SMC files compilation
 SMC=java -jar $(SMC_DIR)/bin/Smc.jar
@@ -39,8 +39,8 @@ SMC_GRAPH_FLAGS= -graph -glevel
 # ======================
 
 # execute test
-run:test
-	./test
+test:testmerge
+	./testmerge
 
 # tags helper
 sm-tags:
