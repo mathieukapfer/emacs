@@ -1,3 +1,5 @@
+#include <linux/string.h>
+
 /*
  * Copyright (C) Overkiz SAS 2012
  *
@@ -12,16 +14,16 @@
   {                                                                     \
     char msg[200];                                                      \
     char prefix[100];                                                   \
-    snprintf(prefix, sizeof(prefix), "%s:%d:%s:", __FILE__,  __LINE__, __FUNCTION__); \
+    snprintf(prefix, sizeof(prefix), "%s:%d:%s:", kbasename(__FILE__),  __LINE__, __FUNCTION__); \
     snprintf(msg, sizeof(msg), __VA_ARGS__);                            \
     printk(level "%s%s\n", prefix, msg);                                \
   }
 
 #ifdef DEBUG
-#define LOG_ENTER       LOG(KERN_DEBUG, "called");
+#define LOG_ENTER(...)  LOG(KERN_DEBUG, "called " __VA_ARGS__);
 #define LOG_INFO(...)   LOG(KERN_DEBUG, __VA_ARGS__)
 #else
-#define LOG_ENTER
+#define LOG_ENTER(...)
 #define LOG_INFO(...)
 #endif
 
@@ -90,7 +92,7 @@ static inline struct atmel_tcb_pwm_chip *to_tcb_chip(struct pwm_chip *chip)
 
 
 /* Add log helper
- * Just insert DUMP_REG(chip) 
+ * Just insert DUMP_REG(chip)
  * to log all registers values of current time counter block
 */
 
@@ -119,6 +121,7 @@ static void pwm_log_reg(struct pwm_chip *chip) {
 
   for (group_index = 0; group_index <= 2; group_index++) {
     READ_AND_LOG_REG(group_index, CMR);
+    READ_AND_LOG_REG(group_index, CV);
     READ_AND_LOG_REG(group_index, RA);
     READ_AND_LOG_REG(group_index, RB);
     READ_AND_LOG_REG(group_index, RC);
@@ -128,6 +131,57 @@ static void pwm_log_reg(struct pwm_chip *chip) {
 
 }
 
+/*
+ * irq handler
+ */
+static int atmel_tcb_pwm_irq_handler(unsigned irq, void *private) {
+  static int counter = 0;
+ 	struct pwm_chip *chip = private;
+
+  LOG_ENTER("irq:%d - counter:%d", irq, counter);
+  counter++;
+
+  LOG_ENTER("private: 0x%p", chip);
+
+  DUMP_REG(chip);
+
+  // disable_irq(irq);
+
+
+  return 0;
+}
+
+/*
+ * Install irq handler
+ */
+static int atmel_tcb_pwm_request_irq(struct pwm_chip *chip) {
+	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
+	struct atmel_tc *tc = tcbpwmc->tc;
+	void __iomem *regs = tc->regs;
+
+  // Work on group TCO (groupe 0)
+	const unsigned group = 0;
+
+  // disable all irq before setting up the handler
+  __raw_writel(ATMEL_TC_ALL_IRQ, regs + ATMEL_TC_REG(group, IDR));
+
+  // set the irq handler
+  // TODO : take into account other information from device tree (3 numbers is given !)
+  // TODO : use SA_INTERRUPT ? (fast interrupt versus slow interrupt - see ldd3 p 278)
+  if (request_irq(tcbpwmc->tc->irq[0],
+                  (void *)atmel_tcb_pwm_irq_handler,
+                  IRQF_TRIGGER_RISING | IRQF_ONESHOT | IRQF_SHARED,
+                  "pwm-cpw", chip)) {
+    dev_err(chip->dev, "install handler error");
+  } else {
+    dev_dbg(chip->dev, "install handler ok");
+  }
+
+  // enable irq
+  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IER));
+
+  return IRQ_HANDLED;
+}
 
 static int atmel_tcb_pwm_set_polarity(struct pwm_chip *chip,
 				      struct pwm_device *pwm,
@@ -176,7 +230,7 @@ static int atmel_tcb_pwm_request(struct pwm_chip *chip,
 	 * Timer Counter is already configured as a PWM generator.
 	 */
   /* MATK HACK : do not take into account previous setup */
-  
+
 	/* if (cmr & ATMEL_TC_WAVE) { */
 	/* 	if (index == 0) */
 	/* 		tcbpwm->duty = */
@@ -229,11 +283,11 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
    * group TC1  | pwm2:               |  pwm3: SW 2 => trigger the low part of CPW 1
    * group TC2  | pwm4:               |  pwm5: SW 1 => trigger the high part of CPW 1
    *
-   *  (1) TIOA0 triggers internal CAN conversion 
+   *  (1) TIOA0 triggers internal CAN conversion
    *      but also group 1 and group 2 start !
    *
-   * SPEC : SW 1 generate a 10 us burst after 80 us starting a *rising* edge of TIOA, 
-   *        then this signal block the high level part (12V, 9V, 6V, 3V) of CPW 1 
+   * SPEC : SW 1 generate a 10 us burst after 80 us starting a *rising* edge of TIOA,
+   *        then this signal block the high level part (12V, 9V, 6V, 3V) of CPW 1
    *        injected to CAN and trigger again on next rising edge (FIX THIS double trigger !).
    *      : SW 2 generate a 10 us burst after 80 us starting a *falling* edge of TIOA,
    *        then this signal block the low level (-12V) injected to GPIO/DI to get
@@ -242,8 +296,8 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
    * NOTE : TIOA0 (trigger) should be the same as TIOB0 (CPW 1 output)
    */
 
-  /* 
-     Accept only pwm->hwpwm = 1 
+  /*
+     Accept only pwm->hwpwm = 1
      in order to allow the control of period and duty cycle of CPW 1
   */
 
@@ -272,7 +326,7 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
   }
 
 #if 0
-  // TMP: setup TCO 
+  // TMP: setup TCO
 
   // TC0 (ADC trigger connected to TIOA0, TIOA0 = TIOB0) /////////////////////////
   //     (     output connected to TIOB0)/////////////////////////////////////////
@@ -294,8 +348,8 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
   __raw_writel(0x5555, regs + ATMEL_TC_REG(group, RC));
 #endif
 
-  /* Configure chaining: 
-     Connect TIOA0 as external event on TIO1(XC1) and TIO2(XC2) 
+  /* Configure chaining:
+     Connect TIOA0 as external event on TIO1(XC1) and TIO2(XC2)
   */
 
   bmr = ATMEL_TC_TC0XC0S_NONE | ATMEL_TC_TC1XC1S_TIOA0 | ATMEL_TC_TC2XC2S_TIOA0;
@@ -341,7 +395,7 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
   }
 #else
 
-  /* TMP : enable setting with test values */ 
+  /* TMP : enable setting with test values */
 	/* Use software trigger to apply the new setting */
 	__raw_writel(ATMEL_TC_CLKEN | ATMEL_TC_SWTRG,
 		     regs + ATMEL_TC_REG(group, CCR));
@@ -355,7 +409,7 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
 #endif
 
   // log for debug
-  DUMP_REG(chip);
+  //DUMP_REG(chip);
 
   return 0;
 }
@@ -386,7 +440,7 @@ static void atmel_tcb_pwm_disable_patched(struct pwm_chip *chip, struct pwm_devi
 	unsigned cmr;
 	enum pwm_polarity polarity = tcbpwm->polarity;
 
-  LOG_ENTER;
+  LOG_ENTER();
 	/*
 	 * If duty is 0 the timer will be stopped and we have to
 	 * configure the output correctly on software trigger:
@@ -396,7 +450,7 @@ static void atmel_tcb_pwm_disable_patched(struct pwm_chip *chip, struct pwm_devi
 	 * This is why we're reverting polarity in this case.
 	 */
 
-  /* MATK patch: always invert polarity regardless the duty value 
+  /* MATK patch: always invert polarity regardless the duty value
    * in order to keep 'inactive' level on disable action
    */
 	// if (tcbpwm->duty == 0)
@@ -439,7 +493,7 @@ static void atmel_tcb_pwm_disable_patched(struct pwm_chip *chip, struct pwm_devi
   }
 
   // log for debug
-  DUMP_REG(chip);
+  //DUMP_REG(chip);
 
 	spin_unlock(&tcbpwmc->lock);
 }
@@ -456,7 +510,7 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 	enum pwm_polarity polarity = tcbpwm->polarity;
   unsigned group_index;
 
-  LOG_ENTER;
+  LOG_ENTER("groupe:%d, index:%d", group, index);
 
 	/*
 	 * If duty is 0 the timer will be stopped and we have to
@@ -534,7 +588,7 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
   }
 
   // log for debug
-  DUMP_REG(chip);
+  //DUMP_REG(chip);
 
 	spin_unlock(&tcbpwmc->lock);
 	return 0;
@@ -558,6 +612,8 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 	unsigned long long min;
 	unsigned long long max;
 	unsigned long long divisor;
+
+  LOG_ENTER("groupe:%d, index:%d", group, index);
 
 	/*
 	 * Find best clk divisor:
@@ -630,7 +686,7 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 
     /* MATK HACK:  special behavour for pwm1 */
     if (pwm->hwpwm == 1) {
-      /* Do the same action on TIOA (pwm0) only if the new setting 
+      /* Do the same action on TIOA (pwm0) only if the new setting
        will not stop the modulation
        NOTE: TIAO is used as trigger on rising edge for ADC.
       */
@@ -668,7 +724,7 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
 	int err;
 	int tcblock;
 
-  LOG_ENTER;
+  LOG_ENTER();
 
 	err = of_property_read_u32(np, "tc-block", &tcblock);
 	if (err < 0) {
@@ -711,6 +767,10 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
 	if (err < 0)
 		goto err_disable_clk;
 
+  // install irq handler
+  atmel_tcb_pwm_request_irq(&tcbpwm->chip);
+  LOG_INFO("tcppwm: 0x%p, &tcbpwm->chip: 0x%p", tcbpwm, &tcbpwm->chip);
+
 	platform_set_drvdata(pdev, tcbpwm);
 
 	return 0;
@@ -729,7 +789,11 @@ static int atmel_tcb_pwm_remove(struct platform_device *pdev)
 	struct atmel_tcb_pwm_chip *tcbpwm = platform_get_drvdata(pdev);
 	int err;
 
+  LOG_ENTER();
+
 	clk_disable_unprepare(tcbpwm->tc->slow_clk);
+
+	free_irq(tcbpwm->tc->irq[0], (void *)&tcbpwm->chip);
 
 	err = pwmchip_remove(&tcbpwm->chip);
 	if (err < 0)
