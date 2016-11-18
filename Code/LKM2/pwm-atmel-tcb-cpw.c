@@ -98,22 +98,32 @@ static inline struct atmel_tcb_pwm_chip *to_tcb_chip(struct pwm_chip *chip)
 
 #define DUMP_REG(chip)                          \
   LOG_INFO("Dump:");                            \
-  pwm_log_reg(chip);
+  pwm_log_all_regs(chip);
 
-#define READ_AND_LOG_REG(group, reg)                              \
-  val = 0;                                                        \
-  offset = ATMEL_TC_REG(group, reg);                              \
-  val = __raw_readl(regs + offset);                               \
-  dev_dbg(chip->dev, "# %s(%d)@%x:%x", #reg, group, offset, val);
+#define READ_AND_LOG_REG(group, reg)                                  \
+  {                                                                   \
+    unsigned offset = ATMEL_TC_REG(group, reg);                       \
+    int val = __raw_readl(regs + offset);                             \
+    dev_dbg(chip->dev, "# %s(%d)@%x:%x", #reg, group, offset, val);   \
+  }
 // LOG_INFO("# %s(%d)@%x:%x", #reg, group, offset, val);
 
-static void pwm_log_reg(struct pwm_chip *chip) {
+static void pwm_log_CV(struct pwm_chip *chip) {
 	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
 	struct atmel_tc *tc = tcbpwmc->tc;
 	void __iomem *regs = tc->regs;
 
-  unsigned val;
-  unsigned offset;
+  int group_index = 0;
+  READ_AND_LOG_REG(group_index, SR);
+  READ_AND_LOG_REG(group_index, RC);
+  READ_AND_LOG_REG(group_index, CV);
+}
+
+static void pwm_log_all_regs(struct pwm_chip *chip) {
+	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
+	struct atmel_tc *tc = tcbpwmc->tc;
+	void __iomem *regs = tc->regs;
+
   int group_index = 0;
 
   READ_AND_LOG_REG(group_index, BCR);
@@ -126,29 +136,77 @@ static void pwm_log_reg(struct pwm_chip *chip) {
     READ_AND_LOG_REG(group_index, RB);
     READ_AND_LOG_REG(group_index, RC);
     READ_AND_LOG_REG(group_index, SR);
+    READ_AND_LOG_REG(group_index, IMR);
     // READ_AND_LOG_REG(group_index, CCR); // write only
   }
 
 }
 
+
+// forward declaration
+static void atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm);
+
+/*
+ * Enable interruption when Counter Value reach RC on group 0
+ * (i.e. at the end of period)
+ */
+static void atmel_tcb_pwm_enable_interrupt_end_of_period(struct atmel_tc *tc) {
+  void __iomem *regs = tc->regs;
+  unsigned int group = 0;
+
+  // clear status to not trigger the interrupt immediatly
+  __raw_readl(regs + ATMEL_TC_REG(group, SR));
+  // enable the interruption
+  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IER));
+}
+
+/*
+ * Disable interruption when Counter Value reach RC on group 0
+ */
+static void atmel_tcb_pwm_disable_interrupt_end_of_period(struct atmel_tc *tc) {
+  void __iomem *regs = tc->regs;
+  unsigned int group = 0;
+  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IDR));
+}
+
+
 /*
  * irq handler
  */
 static int atmel_tcb_pwm_irq_handler(unsigned irq, void *private) {
-  static int counter = 0;
  	struct pwm_chip *chip = private;
+	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
+	struct atmel_tc *tc = tcbpwmc->tc;
 
-  LOG_ENTER("irq:%d - counter:%d", irq, counter);
-  counter++;
+  // work only on groupe 0
+  unsigned int group = 0;
 
-  LOG_ENTER("private: 0x%p", chip);
+  // for debug
+  // LOG_ENTER();
 
-  DUMP_REG(chip);
-
+  // avoid to be interrupted
   // disable_irq(irq);
+  // DUMP_REG(chip);
+  pwm_log_CV(chip);
 
+  // consume the interrupt (disable it)
+  atmel_tcb_pwm_disable_interrupt_end_of_period(tc);
 
-  return 0;
+  // do the job
+  // todo: check if it is the good device !
+  // LOG_INFO("pwm_device:0x%p", &chip->pwms[1]);
+  atmel_tcb_pwm_do_enable(chip, &chip->pwms[1]);
+
+  pwm_log_CV(chip);
+  // for debug
+
+  LOG_INFO("end");
+  // DUMP_REG(chip);
+
+  // restore interrupt
+  // enable_irq(irq);
+
+  return  IRQ_HANDLED;;
 }
 
 /*
@@ -170,17 +228,14 @@ static int atmel_tcb_pwm_request_irq(struct pwm_chip *chip) {
   // TODO : use SA_INTERRUPT ? (fast interrupt versus slow interrupt - see ldd3 p 278)
   if (request_irq(tcbpwmc->tc->irq[0],
                   (void *)atmel_tcb_pwm_irq_handler,
-                  IRQF_TRIGGER_RISING | IRQF_ONESHOT | IRQF_SHARED,
+                  IRQF_TRIGGER_RISING | IRQF_SHARED,
                   "pwm-cpw", chip)) {
     dev_err(chip->dev, "install handler error");
   } else {
     dev_dbg(chip->dev, "install handler ok");
   }
 
-  // enable irq
-  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IER));
-
-  return IRQ_HANDLED;
+  return 0;
 }
 
 static int atmel_tcb_pwm_set_polarity(struct pwm_chip *chip,
@@ -270,6 +325,8 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
   int err;
   unsigned group_index;
   unsigned bmr, cmr;
+
+  LOG_ENTER();
 
   /* CPW driver (Control Pilote Wired)
    * ----------------------------------
@@ -682,6 +739,23 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 
 	/* If the PWM is enabled, call enable to apply the new conf */
 	if (pwm_is_enabled(pwm)) {
+    LOG_INFO("chip->pwms:0x%p, pwm_device:0x%p, sizeof(pwm_device):0x%x ",
+             chip->pwms, pwm, sizeof(struct pwm_device));
+    atmel_tcb_pwm_enable_interrupt_end_of_period(tc);
+    LOG_INFO("int enabled");
+  }
+
+  return 0;
+}
+
+
+/*
+ * Apply configuration
+ */
+static void atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm) {
+
+  	struct atmel_tcb_pwm_device *tcbpwm = pwm_get_chip_data(pwm);
+
 		atmel_tcb_pwm_enable_patched(chip, pwm);
 
     /* MATK HACK:  special behavour for pwm1 */
@@ -699,9 +773,7 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
         pwm->hwpwm = 1;
       }
     }
-  }
 
-	return 0;
 }
 
 
