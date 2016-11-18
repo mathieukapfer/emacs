@@ -106,17 +106,33 @@ static inline struct atmel_tcb_pwm_chip *to_tcb_chip(struct pwm_chip *chip)
     int val = __raw_readl(regs + offset);                             \
     dev_dbg(chip->dev, "# %s(%d)@%x:%x", #reg, group, offset, val);   \
   }
+
+#define MAX_BUF 255
+
+#define READ_AND_CAT_REG(group, reg, buf)                               \
+  {                                                                     \
+    char local_buf[MAX_BUF];                                            \
+    unsigned offset = ATMEL_TC_REG(group, reg);                         \
+    int val = __raw_readl(regs + offset);                               \
+    snprintf(local_buf, MAX_BUF, "%s(%d)@%x:%x ", #reg, group, offset, val); \
+    strncat(buf, local_buf, MAX_BUF);                                   \
+  }
 // LOG_INFO("# %s(%d)@%x:%x", #reg, group, offset, val);
 
 static void pwm_log_CV(struct pwm_chip *chip) {
 	struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
 	struct atmel_tc *tc = tcbpwmc->tc;
 	void __iomem *regs = tc->regs;
+  char buf[MAX_BUF];
+  buf[0] = 0;
 
   int group_index = 0;
-  READ_AND_LOG_REG(group_index, SR);
-  READ_AND_LOG_REG(group_index, RC);
-  READ_AND_LOG_REG(group_index, CV);
+  READ_AND_CAT_REG(group_index, CV, buf);
+  READ_AND_CAT_REG(group_index, SR, buf);
+  READ_AND_CAT_REG(group_index, RA, buf);
+  READ_AND_CAT_REG(group_index, RB, buf);
+  READ_AND_CAT_REG(group_index, RC, buf);
+  dev_dbg(chip->dev, buf);
 }
 
 static void pwm_log_all_regs(struct pwm_chip *chip) {
@@ -144,7 +160,7 @@ static void pwm_log_all_regs(struct pwm_chip *chip) {
 
 
 // forward declaration
-static void atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm);
+static int atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm);
 
 /*
  * Enable interruption when Counter Value reach RC on group 0
@@ -157,7 +173,7 @@ static void atmel_tcb_pwm_enable_interrupt_end_of_period(struct atmel_tc *tc) {
   // clear status to not trigger the interrupt immediatly
   __raw_readl(regs + ATMEL_TC_REG(group, SR));
   // enable the interruption
-  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IER));
+  __raw_writel(ATMEL_TC_CPAS, regs + ATMEL_TC_REG(group, IER));
 }
 
 /*
@@ -166,7 +182,7 @@ static void atmel_tcb_pwm_enable_interrupt_end_of_period(struct atmel_tc *tc) {
 static void atmel_tcb_pwm_disable_interrupt_end_of_period(struct atmel_tc *tc) {
   void __iomem *regs = tc->regs;
   unsigned int group = 0;
-  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IDR));
+  __raw_writel(ATMEL_TC_CPAS, regs + ATMEL_TC_REG(group, IDR));
 }
 
 
@@ -186,7 +202,7 @@ static int atmel_tcb_pwm_irq_handler(unsigned irq, void *private) {
 
   // avoid to be interrupted
   // disable_irq(irq);
-  // DUMP_REG(chip);
+  //DUMP_REG(chip);
   pwm_log_CV(chip);
 
   // consume the interrupt (disable it)
@@ -566,6 +582,9 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 	u32 cmr;
 	enum pwm_polarity polarity = tcbpwm->polarity;
   unsigned group_index;
+  int swtrig = 0;
+  u32 ccr;
+  u32 cv;
 
   LOG_ENTER("groupe:%d, index:%d", group, index);
 
@@ -583,31 +602,16 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 	spin_lock(&tcbpwmc->lock);
 	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
 
-	/* flush old setting and set the new one */
+	/* flush old setting */
 	cmr &= ~ATMEL_TC_TCCLKS;
 
 	if (index == 0) {
 		cmr &= ~ATMEL_TC_ACMR_MASK;
-
-		/* Set CMR flags according to given polarity */
-		if (polarity == PWM_POLARITY_INVERSED)
-			cmr |= ATMEL_TC_ASWTRG_CLEAR;
-		else
-			cmr |= ATMEL_TC_ASWTRG_SET;
 	} else {
 		cmr &= ~ATMEL_TC_BCMR_MASK;
-		if (polarity == PWM_POLARITY_INVERSED)
-			cmr |= ATMEL_TC_BSWTRG_CLEAR;
-		else
-			cmr |= ATMEL_TC_BSWTRG_SET;
 	}
 
-	/*
-	 * If duty is 0 or equal to period there's no need to register
-	 * a specific action on RA/RB and RC compare.
-	 * The output will be configured on software trigger and keep
-	 * this config till next config call.
-	 */
+  /* set new one */
 	if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0) {
 		if (index == 0) {
 			if (polarity == PWM_POLARITY_INVERSED)
@@ -620,7 +624,27 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 			else
 				cmr |= ATMEL_TC_BCPB_CLEAR | ATMEL_TC_BCPC_SET;
 		}
-	}
+	} else {
+    /*
+     * If duty is 0 or equal to period there's no need to register
+     * a specific action on RA/RB and RC compare.
+     * The output will be configured on software trigger and keep
+     * this config till next config call.
+     */
+    if (index == 0) {
+      /* Set CMR flags according to given polarity */
+      if (polarity == PWM_POLARITY_INVERSED)
+        cmr |= ATMEL_TC_ASWTRG_CLEAR;
+      else
+        cmr |= ATMEL_TC_ASWTRG_SET;
+    } else {
+      if (polarity == PWM_POLARITY_INVERSED)
+        cmr |= ATMEL_TC_BSWTRG_CLEAR;
+      else
+        cmr |= ATMEL_TC_BSWTRG_SET;
+    }
+
+  }
 
 	cmr |= (tcbpwm->div & ATMEL_TC_TCCLKS);
 
@@ -634,7 +658,13 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(group, RC));
 
 	/* Use software trigger to apply the new setting */
-	__raw_writel(ATMEL_TC_CLKEN | ATMEL_TC_SWTRG,
+  /* MATK HACK: only if Counter Value is still 0 i.e. the counter has not been started yet */
+  cv = __raw_readl(regs + ATMEL_TC_REG(group, CV));
+  swtrig = (cv == 0);
+  ccr = swtrig?ATMEL_TC_SWTRG:0;
+  // LOG_INFO("swtrig:%d, CV:0x%x, CCR:0x%x", swtrig, cv, ccr);
+
+	__raw_writel(ATMEL_TC_CLKEN  | ccr,
 		     regs + ATMEL_TC_REG(group, CCR));
 
   /* MATK HACK */
@@ -704,6 +734,8 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 			return -ERANGE;
 	}
 
+  // LOG_INFO("case:%d, divisor:%llu, clock_rate:%u", i, divisor, rate);
+
 	duty = div_u64((u64)duty_ns*(u64)rate, divisor);
 	period = div_u64((u64)period_ns*(u64)rate, divisor);
 
@@ -739,10 +771,9 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 
 	/* If the PWM is enabled, call enable to apply the new conf */
 	if (pwm_is_enabled(pwm)) {
-    LOG_INFO("chip->pwms:0x%p, pwm_device:0x%p, sizeof(pwm_device):0x%x ",
-             chip->pwms, pwm, sizeof(struct pwm_device));
+    // LOG_INFO("chip->pwms:0x%p, pwm_device:0x%p, sizeof(pwm_device):0x%x ", chip->pwms, pwm, sizeof(struct pwm_device));
     atmel_tcb_pwm_enable_interrupt_end_of_period(tc);
-    LOG_INFO("int enabled");
+    // LOG_INFO("int enabled");
   }
 
   return 0;
@@ -752,28 +783,35 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
 /*
  * Apply configuration
  */
-static void atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm) {
+static int atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm) {
 
   	struct atmel_tcb_pwm_device *tcbpwm = pwm_get_chip_data(pwm);
 
 		atmel_tcb_pwm_enable_patched(chip, pwm);
 
-    /* MATK HACK:  special behavour for pwm1 */
+    /* MATK HACK: special behavour for pwm1 */
     if (pwm->hwpwm == 1) {
       /* Do the same action on TIOA (pwm0) only if the new setting
-       will not stop the modulation
+       will not stop the modulation, else for rate to 50%
+       i.e. duty to period / 2
        NOTE: TIAO is used as trigger on rising edge for ADC.
       */
-      if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0) {
-        // hack the pwm number
-        pwm->hwpwm = 0;
-        // Apply same setting
-        atmel_tcb_pwm_enable_patched(chip, pwm);
-        // restore the original pwm number
-        pwm->hwpwm = 1;
+      unsigned duty_buf = tcbpwm->duty;
+      if (tcbpwm->duty == tcbpwm->period || tcbpwm->duty == 0) {
+        // hack duty value
+        tcbpwm->duty =  tcbpwm->period / 2;
       }
+      // hack the pwm number
+      pwm->hwpwm = 0;
+      // Apply the setting
+      atmel_tcb_pwm_enable_patched(chip, pwm);
+      // restore all original values
+      pwm->hwpwm = 1;
+      tcbpwm->duty = duty_buf;
     }
 
+    //DUMP_REG(chip);
+    return 0;
 }
 
 
@@ -783,7 +821,7 @@ static const struct pwm_ops atmel_tcb_pwm_ops = {
 	.free = atmel_tcb_pwm_free,
 	.config = atmel_tcb_pwm_config_patched,
 	.set_polarity = atmel_tcb_pwm_set_polarity,
-	.enable = atmel_tcb_pwm_enable_patched,
+	.enable = atmel_tcb_pwm_do_enable,
 	.disable = atmel_tcb_pwm_disable_patched,
 	.owner = THIS_MODULE,
 };
