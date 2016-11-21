@@ -173,7 +173,7 @@ static void atmel_tcb_pwm_enable_interrupt_end_of_period(struct atmel_tc *tc) {
   // clear status to not trigger the interrupt immediatly
   __raw_readl(regs + ATMEL_TC_REG(group, SR));
   // enable the interruption
-  __raw_writel(ATMEL_TC_CPAS, regs + ATMEL_TC_REG(group, IER));
+  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IER));
 }
 
 /*
@@ -182,7 +182,7 @@ static void atmel_tcb_pwm_enable_interrupt_end_of_period(struct atmel_tc *tc) {
 static void atmel_tcb_pwm_disable_interrupt_end_of_period(struct atmel_tc *tc) {
   void __iomem *regs = tc->regs;
   unsigned int group = 0;
-  __raw_writel(ATMEL_TC_CPAS, regs + ATMEL_TC_REG(group, IDR));
+  __raw_writel(ATMEL_TC_CPCS, regs + ATMEL_TC_REG(group, IDR));
 }
 
 
@@ -197,13 +197,14 @@ static int atmel_tcb_pwm_irq_handler(unsigned irq, void *private) {
   // work only on groupe 0
   unsigned int group = 0;
 
-  // for debug
-  // LOG_ENTER();
+  // for
+  LOG_ENTER();
 
   // avoid to be interrupted
   // disable_irq(irq);
+
   //DUMP_REG(chip);
-  pwm_log_CV(chip);
+  //pwm_log_CV(chip);
 
   // consume the interrupt (disable it)
   atmel_tcb_pwm_disable_interrupt_end_of_period(tc);
@@ -599,7 +600,9 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 	if (tcbpwm->duty == 0)
 		polarity = !polarity;
 
-	spin_lock(&tcbpwmc->lock);
+  // [move into atmel_tcb_pwm_do_enable fct]
+	// spin_lock(&tcbpwmc->lock);
+
 	cmr = __raw_readl(regs + ATMEL_TC_REG(group, CMR));
 
 	/* flush old setting */
@@ -631,6 +634,7 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
      * The output will be configured on software trigger and keep
      * this config till next config call.
      */
+    swtrig = 1;
     if (index == 0) {
       /* Set CMR flags according to given polarity */
       if (polarity == PWM_POLARITY_INVERSED)
@@ -657,10 +661,15 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
 
 	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(group, RC));
 
-	/* Use software trigger to apply the new setting */
-  /* MATK HACK: only if Counter Value is still 0 i.e. the counter has not been started yet */
+  /* Software trigger
+   *  - Use software trigger to apply the new setting (case 0% and 100%)
+   *  - Force software trigger if Counter Value is still 0 i.e. the counter
+   *    has not been started yet */
   cv = __raw_readl(regs + ATMEL_TC_REG(group, CV));
-  swtrig = (cv == 0);
+  swtrig = swtrig || (cv == 0);
+
+  /* Ok, now we really need to enable clock and/or software trigger */
+  if (swtrig) {
   ccr = swtrig?ATMEL_TC_SWTRG:0;
   // LOG_INFO("swtrig:%d, CV:0x%x, CCR:0x%x", swtrig, cv, ccr);
 
@@ -673,11 +682,13 @@ static int atmel_tcb_pwm_enable_patched(struct pwm_chip *chip, struct pwm_device
   		__raw_writel(ATMEL_TC_CLKEN,
                    regs + ATMEL_TC_REG(group_index, CCR));
   }
+  }
 
   // log for debug
   //DUMP_REG(chip);
 
-	spin_unlock(&tcbpwmc->lock);
+  // [move into atmel_tcb_pwm_do_enable fct]
+	// spin_unlock(&tcbpwmc->lock);
 	return 0;
 }
 
@@ -785,14 +796,19 @@ static int atmel_tcb_pwm_config_patched(struct pwm_chip *chip, struct pwm_device
  */
 static int atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm) {
 
+	  struct atmel_tcb_pwm_chip *tcbpwmc = to_tcb_chip(chip);
   	struct atmel_tcb_pwm_device *tcbpwm = pwm_get_chip_data(pwm);
+    unsigned long flags;
+
+    /* start critical section */
+    spin_lock_irqsave(&tcbpwmc->lock, flags);
 
 		atmel_tcb_pwm_enable_patched(chip, pwm);
 
     /* MATK HACK: special behavour for pwm1 */
     if (pwm->hwpwm == 1) {
       /* Do the same action on TIOA (pwm0) only if the new setting
-       will not stop the modulation, else for rate to 50%
+       will not stop the modulation, else force rate to 50%
        i.e. duty to period / 2
        NOTE: TIAO is used as trigger on rising edge for ADC.
       */
@@ -809,6 +825,9 @@ static int atmel_tcb_pwm_do_enable(struct pwm_chip *chip, struct pwm_device *pwm
       pwm->hwpwm = 1;
       tcbpwm->duty = duty_buf;
     }
+
+    /* release critical section */
+    spin_unlock_irqrestore(&tcbpwmc->lock, flags);
 
     //DUMP_REG(chip);
     return 0;
