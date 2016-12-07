@@ -1,8 +1,5 @@
 bin_PROGRAMS = testmerge
 
-# SMC path
-SMC_DIR=../smc_6_0_1
-
 # ======================
 # generate bin
 # ======================
@@ -26,27 +23,8 @@ testmerge_SOURCES = \
 
 testmerge_CXXFLAGS= -I$(SMC_DIR)/lib/C++
 
-# SMC files compilation
-SMC=java -jar $(SMC_DIR)/bin/Smc.jar
-SMC_FLAGS= -c++ -g -nostreams
-SMC_GRAPH_FLAGS= -graph -glevel 
-
-%_sm.h %_sm.cpp: %.sm
-	$(SMC) $(SMC_FLAGS) $<
-
-# ======================
-# helper
-# ======================
-
-# execute test
+# bin execution
 test:testmerge
 	./testmerge
 
-# tags helper
-sm-tags:
-	etags -o TAGS_sm -r '/^[A-Z][A-Za-z0-9_]+/' *.sm 
-
-# clean helper
-cleansm:
-	rm $(SM_SOURCES:.sm=_sm.cpp) $(SM_SOURCES:.sm=_sm.h)
-
+include ../MakefileUtils
