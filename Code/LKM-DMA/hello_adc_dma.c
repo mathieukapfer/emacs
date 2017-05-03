@@ -32,7 +32,7 @@
 #include <linux/io.h>
 
 #define AT91SAM9260_BASE_ADC 0xfffe0000
-#define PDC_BUFFER_SIZE		512
+#define PDC_BUFFER_SIZE		0x1000
 
 
 MODULE_LICENSE("GPL");              ///< The license type -- this affects runtime behavior
@@ -99,12 +99,21 @@ static inline void atmel_adc_dma_writel(u32 reg, u32 value) {
 #define CLASS_NAME  "adc_dma_class"
 
 // forward declaration
+static void atmel_adc_stop_rx(void);
 static void atmel_adc_start_rx(void);
 static void atmel_rx_from_pdc(struct atmel_adc_dma *adc_dma);
 
 
 // SYSFS stuff
 // ------------------------------------------------------------------------------
+static ssize_t buffer_show(struct device *child,
+			   struct device_attribute *attr,
+			   char *buf)
+{
+  atmel_rx_from_pdc(&adc_dma_data);
+	return sprintf(buf, "Please look dmesg \n");
+}
+
 static ssize_t enable_show(struct device *child,
 			   struct device_attribute *attr,
 			   char *buf)
@@ -118,8 +127,6 @@ static ssize_t enable_show(struct device *child,
     val = atmel_adc_dma_readl(reg + 0x100);
     printk(KERN_INFO "reg[0x%x]:0x%x\n", reg + 0x100 , val);
   }
-
-  atmel_rx_from_pdc(&adc_dma_data);
 
 	return sprintf(buf, "Please look dmesg \n");//pwm_is_enabled(pwm));
 }
@@ -137,8 +144,9 @@ static ssize_t enable_store(struct device *child,
 
 	switch (val) {
 	case 0:
-    printk(KERN_INFO "%s called with %d\n", __FUNCTION__, val);
-		//pwm_disable(pwm);
+    printk(KERN_INFO "%s called with %d - stop dma rx\n", __FUNCTION__, val);
+		atmel_adc_stop_rx();
+    //pwm_disable(pwm);
 		break;
 	case 1:
     printk(KERN_INFO "%s called with %d - start dma rx !\n", __FUNCTION__, val);
@@ -154,9 +162,11 @@ static ssize_t enable_store(struct device *child,
 }
 
 static DEVICE_ATTR_RW(enable);
+static DEVICE_ATTR_RO(buffer);
 
 static struct attribute *hello_attrs[] = {
 	&dev_attr_enable.attr,
+	&dev_attr_buffer.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(hello);
@@ -289,6 +299,18 @@ static void atmel_adc_start_rx(void)
   atmel_adc_dma_writel(ATMEL_PDC_PTCR, ATMEL_PDC_RXTEN);
 }
 
+static void atmel_adc_stop_rx(void)
+{
+
+  /* enable PDC controller */
+  /*
+  atmel_adc_dma_writel(port, ATMEL_US_IER,
+                    ATMEL_US_ENDRX | ATMEL_US_TIMEOUT |
+                    port->read_status_mask); */
+  atmel_adc_dma_writel(ATMEL_PDC_PTCR, ATMEL_PDC_RXTDIS);
+}
+
+
 static int atmel_adc_prepare_rx_pdc(struct atmel_adc_dma *adc_dma)
 {
 	int i;
@@ -296,7 +318,11 @@ static int atmel_adc_prepare_rx_pdc(struct atmel_adc_dma *adc_dma)
 	for (i = 0; i < 2; i++) {
 		struct atmel_adc_dma_buffer *pdc = &adc_dma->pdc_rx[i];
 
-		pdc->buf = kmalloc(PDC_BUFFER_SIZE, GFP_KERNEL);
+		pdc->buf = kmalloc(
+                       /* x 2 is need as ADC DMA size is based on u16
+                          but we use x 4 to fix the BUG of atmel_rx_from_pdc().                                               */
+                       PDC_BUFFER_SIZE * 4,
+                       GFP_KERNEL);
 		if (pdc->buf == NULL) {
 			if (i != 0) {
 				dma_unmap_single(helloDevice, // put as attribute
@@ -345,6 +371,20 @@ static void atmel_rx_from_pdc(struct atmel_adc_dma *adc_dma)
 		//atmel_uart_writel(port, ATMEL_US_CR, ATMEL_US_STTTO);
 
 		pdc = &adc_dma->pdc_rx[rx_idx];
+    /*
+       MATK FIX : the line above is wrong if the kalloc function
+       provide two consecutives memory region like this
+              RNPR + DMA SIZE = RPR (1)
+       In this case, when PDC mecanism switch to next region :
+              RPR = RNPR
+       and complete the transfert we have
+                  = RNPR + DMA SIZE
+                  = RPR !!
+       By checking only RPR register it looks like no transfert at all
+       have been done !
+       FIX : This bug is fix by using double size as needed for each
+       memory section. Then we have never the equation (1)
+     */
 		head = atmel_adc_dma_readl(ATMEL_PDC_RPR) - pdc->dma_addr;
 		tail = pdc->ofs;
 
