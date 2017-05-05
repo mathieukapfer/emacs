@@ -33,7 +33,8 @@
 
 #include "at91_adc_pdc.h"
 
-//#define ENABLE_PDC
+//#define ENABLE_PDC => useless code !!!
+#define ENABLE_PDC_
 #define ENABLE_PDC_INT
 
 #define DEBUG
@@ -277,7 +278,7 @@ struct at91_adc_state {
 	u32			ts_prev_absx;
 	u32			ts_prev_absy;
 
-#ifdef ENABLE_PDC
+#ifdef ENABLE_PDC_
   /* add pdc spport */
   struct at91_adc_dma adc_dma_data;
 #endif
@@ -394,12 +395,14 @@ static irqreturn_t at91_adc_pdc_interrupt(int irq, void *private) {
 	struct iio_dev *idev = private;
 	struct at91_adc_state *st = iio_priv(idev);
 
-#ifdef ENABLE_PDC
+#ifdef ENABLE_PDC_
 	if (iio_buffer_enabled(idev)) {
+    LOG_REG(IMR); LOG_REG(SR);
     // irq should be the ENDRX, so trig DMA transfer to iio_buffer
     at91_adc_rx_from_pdc(&st->adc_dma_data, idev);
-  }  else {
+  } else {
     // irq should be the EOC, so read & wakeup the called
+    LOG_REG(IMR); LOG_REG(SR);
 		st->last_value = at91_adc_readl(st, AT91_ADC_CHAN(st, st->chnb));
 		st->done = true;
 		wake_up_interruptible(&st->wq_data_avail);
@@ -660,18 +663,30 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
      *  when the current DMA transfer is completed (first buffer full)
      */
 #ifdef ENABLE_PDC_INT
-    LOG_INFO("adc: enable irq on ENDRX (Peripheric DMA mode)");
+    LOG_INFO("adc: enable irq on ENDRX only (Peripheric DMA mode)");
     LOG_REG(SR);
+    at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF); /* disable all interrupts */
     at91_adc_writel(st, AT91_ADC_IER, AT91_ADC_ENDRX);
     LOG_REG(IMR);
     LOG_REG(SR);
 #else
     LOG_INFO("adc: NO INT ENABLED");
 #endif
+
+#ifdef ENABLE_PDC_
+    at91_adc_pdc_start_rx();
+#endif
+
+
 #endif
 
     /* patch MATK: end */
 	} else {
+
+#ifdef ENABLE_PDC_
+    at91_adc_pdc_stop_rx();
+#endif
+
 		at91_adc_writel(st, AT91_ADC_IDR, reg->drdy_mask);
 
 		at91_adc_writel(st, reg->trigger_register,
@@ -1443,12 +1458,12 @@ static int at91_adc_probe(struct platform_device *pdev)
 		goto error_iio_device_register;
 	}
 
-#ifdef ENABLE_PDC
+#ifdef ENABLE_PDC_
   /* PDC init */
   at91_adc_pdc_init(&st->adc_dma_data, idev);
 
   /* force the rx transfer */
-  at91_adc_pdc_start_rx();
+  //at91_adc_pdc_start_rx();
 
 #endif
 
@@ -1475,7 +1490,7 @@ static int at91_adc_remove(struct platform_device *pdev)
 	struct iio_dev *idev = platform_get_drvdata(pdev);
 	struct at91_adc_state *st = iio_priv(idev);
 
-#ifdef ENABLE_PDC
+#ifdef ENABLE_PDC_
   at91_adc_pdc_exit();
 #endif
 	iio_device_unregister(idev);

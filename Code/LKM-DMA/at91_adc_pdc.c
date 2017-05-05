@@ -32,7 +32,7 @@
 
 #define AT91SAM9260_BASE_ADC 0xfffe0000
 //#define PDC_BUFFER_SIZE		40 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
-#define PDC_BUFFER_SIZE		4000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
+#define PDC_BUFFER_SIZE		8000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
 
 
 /* driver stuff */
@@ -89,7 +89,7 @@ static void memdump(unsigned char	*buf, int size_in_char) {
 
   printk(KERN_INFO "%p:%d [0x%x]\n", buf, size, size);
 
-#if 1
+#if 0
   for (line = 0; line < size; line += col_size) {
     pos = snprintf(line_buff, sizeof(line_buff), " %x:", line);
     for (col = 0; (col < col_size) && (line + col < size) ; col++) {
@@ -214,6 +214,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
 		head = at91_adc_dma_readl(ATMEL_PDC_RPR) - pdc->dma_addr;
 		tail = pdc->ofs;
 
+    at91_adc_pdc_log();
     printk(KERN_INFO "head:0x%x, tail:0x%x \n", head, tail);
 
 		/* If the PDC has switched buffers, RPR won't contain
@@ -257,6 +258,8 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
         /* push to iio buffer */
         iio_push_to_buffers((struct iio_dev *)idev, buffer);
       }
+#else
+       memdump(pdc->buf + pdc->ofs, count);
 #endif
 
 			dma_sync_single_for_device(&idev->dev, pdc->dma_addr,
