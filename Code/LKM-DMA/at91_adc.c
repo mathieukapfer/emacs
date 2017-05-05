@@ -617,6 +617,8 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 		if (st->buffer == NULL)
 			return -ENOMEM;
 
+    at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF); /* disable all interrupts */
+
 		at91_adc_writel(st, reg->trigger_register,
 				status | value);
 
@@ -665,7 +667,6 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 #ifdef ENABLE_PDC_INT
     LOG_INFO("adc: enable irq on ENDRX only (Peripheric DMA mode)");
     LOG_REG(SR);
-    at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF); /* disable all interrupts */
     at91_adc_writel(st, AT91_ADC_IER, AT91_ADC_ENDRX);
     LOG_REG(IMR);
     LOG_REG(SR);
@@ -692,12 +693,13 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 		at91_adc_writel(st, reg->trigger_register,
 				status & ~value);
 
+    at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF); /* disable all interrupts */
+
 		for_each_set_bit(bit, idev->active_scan_mask,
 				 st->num_channels) {
 			struct iio_chan_spec const *chan = idev->channels + bit;
 			at91_adc_writel(st, AT91_ADC_CHDR,
 					AT91_ADC_CH(chan->channel));
-      /* matk : disable (all) EOC bit */
        at91_adc_writel(st, AT91_ADC_IER, AT91_ADC_CH(chan->channel));
        LOG_INFO("adc: enable irq on EOC %d", chan->channel);
 		}
