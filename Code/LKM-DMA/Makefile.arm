@@ -1,4 +1,12 @@
-obj-m+=hello_adc_dma.o
+# multiple files module :
+obj-m+=at91_adc_with_pdc.o
+at91_adc_with_pdc-objs := at91_adc.o at91_adc_pdc.o
+
+# one file modules
+# obj-m+=at91_adc.o hello_adc_dma.o
+obj-m+=at91_adc_noIRQ.o
+obj-m+=at91_adc_ref.o
+
 
 #CROSS_COMPILE	=	$(CROSS_COMPILE_BUILDROOT)
 CROSS_COMPILE	= armv5l-linux-

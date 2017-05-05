@@ -372,18 +372,19 @@ static void atmel_rx_from_pdc(struct atmel_adc_dma *adc_dma)
 
 		pdc = &adc_dma->pdc_rx[rx_idx];
     /*
-       MATK FIX : the line above is wrong if the kalloc function
-       provide two consecutives memory region like this
+       MATK FIX : the line above is wrong if the kmalloc function
+       (done in atmel_adc_prepare_rx_pdc) provide two consecutive
+       memory regions like this :
               RNPR + DMA SIZE = RPR (1)
        In this case, when PDC mecanism switch to next region :
-              RPR = RNPR
+              RPR <= RNPR
        and complete the transfert we have
-                  = RNPR + DMA SIZE
-                  = RPR !!
+              RPR <= RNPR + DMA SIZE
+                   = initial RPR !!!
        By checking only RPR register it looks like no transfert at all
        have been done !
        FIX : This bug is fix by using double size as needed for each
-       memory section. Then we have never the equation (1)
+       memory section. Then the equation (1) is never true.
      */
 		head = atmel_adc_dma_readl(ATMEL_PDC_RPR) - pdc->dma_addr;
 		tail = pdc->ofs;
