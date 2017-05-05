@@ -13,7 +13,8 @@ static void * (*real_malloc) (size_t size);
 static void __attribute__ (( constructor )) my_init() {
   LOG_ENTRY();
   real_malloc = dlsym(RTLD_NEXT, "malloc");
-  LOG_EXIT("real_malloc:%p",real_malloc);
+  LOG_EXIT("real_malloc:%p", real_malloc);
+
 }
 
 /* ok, that the new implementation */
@@ -24,7 +25,7 @@ void *malloc(size_t size) {
   /* call the real malloc */
   ret = real_malloc(size);
   /* adding log */
-  LOG_INFO("malloc:%p(%zd)\n", ret, size);
+  LOG_INFO("malloc:%p(%zd)", ret, size);
   /* return real malloc result */
   return ret;
 }
