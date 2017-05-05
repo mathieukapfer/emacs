@@ -31,7 +31,8 @@
 #include "at91_adc_pdc.h"
 
 #define AT91SAM9260_BASE_ADC 0xfffe0000
-#define PDC_BUFFER_SIZE		40 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
+//#define PDC_BUFFER_SIZE		40 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
+#define PDC_BUFFER_SIZE		4000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
 
 
 /* driver stuff */
@@ -102,6 +103,13 @@ static void memdump(unsigned char	*buf, int size_in_char) {
 #endif
 
 }
+
+void at91_dump_dma_region(struct at91_adc_dma *adc_dma_data) {
+  memdump(adc_dma_data->pdc_rx[0].buf, PDC_BUFFER_SIZE);
+  memdump(adc_dma_data->pdc_rx[1].buf, PDC_BUFFER_SIZE);
+}
+EXPORT_SYMBOL(at91_dump_dma_region);
+
 
 
 void at91_adc_pdc_start_rx(void)
@@ -238,6 +246,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
       //tty_insert_flip_string(tport, pdc->buf + pdc->ofs,
       //count);
 
+#if 0
       if (idev == NULL) {
         /* okay this is just for test : dump the data */
         memdump(pdc->buf + pdc->ofs, count);
@@ -248,6 +257,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
         /* push to iio buffer */
         iio_push_to_buffers((struct iio_dev *)idev, buffer);
       }
+#endif
 
 			dma_sync_single_for_device(&idev->dev, pdc->dma_addr,
 					pdc->dma_size, DMA_FROM_DEVICE);

@@ -32,5 +32,6 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev);
 
 /* for debug prupose : dump PDC registers */
 void at91_adc_pdc_log(void);
+void at91_dump_dma_region(struct at91_adc_dma *adc_dma_data);
 
 #endif /* AT91_ADC_PDC_H */

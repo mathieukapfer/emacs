@@ -31,6 +31,11 @@
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/triggered_buffer.h>
 
+#include "at91_adc_pdc.h"
+
+//#define ENABLE_PDC
+#define ENABLE_PDC_INT
+
 #define DEBUG
 #define LOG(level, ...)                                                 \
   {                                                                     \
@@ -50,12 +55,17 @@
 #define LOG_ENTER_     LOG(KERN_INFO, "called");
 #define LOG_DEBUG(...) LOG(KERN_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)  LOG(KERN_INFO, __VA_ARGS__)
+#define LOG_REG(reg)   LOG_INFO("%s:@%x:0x%x", #reg,                \
+                                AT91_ADC_##reg,                     \
+                                at91_adc_readl(st, AT91_ADC_##reg)  \
+                                );
 #else
 #define LOG_MODULO(mod, ...)
 #define LOG_ENTER
 #define LOG_ENTER_
 #define LOG_DEBUG
 #define LOG_INFO(...)
+#define LOG_REG(reg)
 #endif
 
 
@@ -266,6 +276,12 @@ struct at91_adc_state {
 	bool			ts_bufferedmeasure;
 	u32			ts_prev_absx;
 	u32			ts_prev_absy;
+
+#ifdef ENABLE_PDC
+  /* add pdc spport */
+  struct at91_adc_dma adc_dma_data;
+#endif
+
 };
 
 static irqreturn_t at91_adc_trigger_handler(int irq, void *p)
@@ -371,6 +387,39 @@ static int at91_ts_sample(struct at91_adc_state *st)
 
 	return 0;
 }
+
+#ifdef ENABLE_PDC_INT
+
+static irqreturn_t at91_adc_pdc_interrupt(int irq, void *private) {
+	struct iio_dev *idev = private;
+	struct at91_adc_state *st = iio_priv(idev);
+
+#ifdef ENABLE_PDC
+	if (iio_buffer_enabled(idev)) {
+    // irq should be the ENDRX, so trig DMA transfer to iio_buffer
+    at91_adc_rx_from_pdc(&st->adc_dma_data, idev);
+  }  else {
+    // irq should be the EOC, so read & wakeup the called
+		st->last_value = at91_adc_readl(st, AT91_ADC_CHAN(st, st->chnb));
+		st->done = true;
+		wake_up_interruptible(&st->wq_data_avail);
+	}
+#else
+  // just one shot interrupt for test : disable
+  LOG_INFO("pdc int on ENDRX catched: ");
+  LOG_REG(IMR); LOG_REG(SR);
+  LOG_INFO("disable INT on ENDRX: ");
+  at91_adc_writel(st, AT91_ADC_IDR, AT91_ADC_ENDRX);
+  LOG_REG(IMR);
+  LOG_INFO("disable all INT: ");
+  at91_adc_writel(st, AT91_ADC_IDR, 0xFFFFFFFF);
+  LOG_REG(IMR);
+#endif
+
+	return IRQ_HANDLED;
+}
+
+#endif
 
 static irqreturn_t at91_adc_rl_interrupt(int irq, void *private)
 {
@@ -587,6 +636,9 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 
 		}
 
+    /* #if 0: disable IRQ on EOC  */
+#if 0
+
     if (last_channel_bit_mask > 0) {
       /* enable interrupt on the *last* channel EOC bit */
       LOG_INFO("adc: enable channel bit mask: 0x%x", last_channel_bit_mask);
@@ -602,6 +654,21 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
     } else {
       LOG_INFO("adc: NO TRIGGER ENABLED");
     }
+#else
+    /*  Use IRQ on ENDRX - end of reception
+     *  This IRQ is used by Peripheric DMA Channel of ADC (PDC)
+     *  when the current DMA transfer is completed (first buffer full)
+     */
+#ifdef ENABLE_PDC_INT
+    LOG_INFO("adc: enable irq on ENDRX (Peripheric DMA mode)");
+    LOG_REG(SR);
+    at91_adc_writel(st, AT91_ADC_IER, AT91_ADC_ENDRX);
+    LOG_REG(IMR);
+    LOG_REG(SR);
+#else
+    LOG_INFO("adc: NO INT ENABLED");
+#endif
+#endif
 
     /* patch MATK: end */
 	} else {
@@ -617,6 +684,7 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 					AT91_ADC_CH(chan->channel));
       /* matk : disable (all) EOC bit */
        at91_adc_writel(st, AT91_ADC_IER, AT91_ADC_CH(chan->channel));
+       LOG_INFO("adc: enable irq on EOC %d", chan->channel);
 		}
 		kfree(st->buffer);
 	}
@@ -701,10 +769,47 @@ static void at91_adc_trigger_remove(struct iio_dev *idev)
 	}
 }
 
+
+#ifdef ENABLE_PDC
+static int at91_adc_pdc_start_rx_(struct iio_dev *indio_dev) {
+  at91_adc_pdc_start_rx();
+  return 0;
+}
+
+static int at91_adc_pdc_log_(struct iio_dev *indio_dev) {
+	struct at91_adc_state *st = iio_priv(indio_dev);
+  /*
+  LOG_INFO("SR:@%x:0x%x",
+           AT91_ADC_SR,
+           at91_adc_readl(st, AT91_ADC_SR)
+           );
+  */
+  at91_adc_pdc_log();
+  at91_dump_dma_region(&st->adc_dma_data);
+  return 0;
+}
+
+static int at91_adc_pdc_stop_rx_(struct iio_dev *indio_dev) {
+  at91_adc_pdc_stop_rx();
+  return 0;
+}
+
+static const struct iio_buffer_setup_ops iio_pdc_setup_ops = {
+	.preenable = &at91_adc_pdc_start_rx_,
+  .predisable = &at91_adc_pdc_log_,
+	.postdisable = &at91_adc_pdc_stop_rx_,
+};
+#endif
+
 static int at91_adc_buffer_init(struct iio_dev *idev)
 {
+#ifdef ENABLE_PDC
+	return iio_triggered_buffer_setup(idev, &iio_pollfunc_store_time,
+		&at91_adc_trigger_handler, &iio_pdc_setup_ops);
+#else
 	return iio_triggered_buffer_setup(idev, &iio_pollfunc_store_time,
 		&at91_adc_trigger_handler, NULL);
+#endif
 }
 
 static void at91_adc_buffer_remove(struct iio_dev *idev)
@@ -1212,9 +1317,16 @@ static int at91_adc_probe(struct platform_device *pdev)
 	if (st->caps->has_tsmr)
 		ret = request_irq(st->irq, at91_adc_9x5_interrupt, 0,
 				  pdev->dev.driver->name, idev);
-	else
+	else {
+#ifdef ENABLE_PDC_INT
+    /* use PDC handler */
+		ret = request_irq(st->irq, at91_adc_pdc_interrupt, 0,
+				  pdev->dev.driver->name, idev);
+#else
 		ret = request_irq(st->irq, at91_adc_rl_interrupt, 0,
 				  pdev->dev.driver->name, idev);
+#endif
+  }
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to allocate IRQ.\n");
 		return ret;
@@ -1331,6 +1443,15 @@ static int at91_adc_probe(struct platform_device *pdev)
 		goto error_iio_device_register;
 	}
 
+#ifdef ENABLE_PDC
+  /* PDC init */
+  at91_adc_pdc_init(&st->adc_dma_data, idev);
+
+  /* force the rx transfer */
+  at91_adc_pdc_start_rx();
+
+#endif
+
 	return 0;
 
 error_iio_device_register:
@@ -1354,6 +1475,9 @@ static int at91_adc_remove(struct platform_device *pdev)
 	struct iio_dev *idev = platform_get_drvdata(pdev);
 	struct at91_adc_state *st = iio_priv(idev);
 
+#ifdef ENABLE_PDC
+  at91_adc_pdc_exit();
+#endif
 	iio_device_unregister(idev);
 	if (!st->touchscreen_type) {
 		at91_adc_trigger_remove(idev);
