@@ -24,7 +24,7 @@ int at91_adc_pdc_init(struct at91_adc_dma* adc_dma_data, struct iio_dev *idev);
 void at91_adc_pdc_exit(void);
 
 /* start & stop the data transfer from ADC to PDC */
-void at91_adc_pdc_start_rx(void);
+void at91_adc_pdc_start_rx(struct at91_adc_dma *adc_dma_data);
 void at91_adc_pdc_stop_rx(void);
 
 /* read data from PDC to iio buffer */

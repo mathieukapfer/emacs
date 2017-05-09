@@ -675,7 +675,7 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
 #endif
 
 #ifdef ENABLE_PDC_
-    at91_adc_pdc_start_rx();
+    at91_adc_pdc_start_rx(&st->adc_dma_data);
 #endif
 
 

@@ -32,7 +32,7 @@
 
 #define AT91SAM9260_BASE_ADC 0xfffe0000
 //#define PDC_BUFFER_SIZE		40 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
-#define PDC_BUFFER_SIZE		8000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
+#define PDC_BUFFER_SIZE		0x1000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
 
 
 /* driver stuff */
@@ -73,7 +73,7 @@ void at91_adc_pdc_log(void) {
   /* dump the dma config */
   for (reg = 0; reg < 0x28; reg += 4) {
     val = at91_adc_dma_readl(reg + 0x100);
-    printk(KERN_INFO "reg[0x%x]:0x%x\n", reg + 0x100 , val);
+    printk(KERN_DEBUG "reg[0x%x]:0x%x\n", reg + 0x100 , val);
   }
 }
 
@@ -112,7 +112,7 @@ EXPORT_SYMBOL(at91_dump_dma_region);
 
 
 
-void at91_adc_pdc_start_rx(void)
+void at91_adc_pdc_start_rx(struct at91_adc_dma *adc_dma)
 {
 
   /* enable PDC controller */
@@ -120,6 +120,15 @@ void at91_adc_pdc_start_rx(void)
   at91_adc_dma_writel(port, ATMEL_US_IER,
                     ATMEL_US_ENDRX | ATMEL_US_TIMEOUT |
                     port->read_status_mask); */
+
+  /* it's better to start clean: reinit pointer */
+	at91_adc_dma_writel(ATMEL_PDC_RPR, adc_dma->pdc_rx[0].dma_addr);
+	at91_adc_dma_writel(ATMEL_PDC_RCR, PDC_BUFFER_SIZE);
+
+	at91_adc_dma_writel(ATMEL_PDC_RNPR, adc_dma->pdc_rx[1].dma_addr);
+	at91_adc_dma_writel(ATMEL_PDC_RNCR, PDC_BUFFER_SIZE);
+
+  /* start rx*/
   at91_adc_dma_writel(ATMEL_PDC_PTCR, ATMEL_PDC_RXTEN);
 }
 EXPORT_SYMBOL(at91_adc_pdc_start_rx);
@@ -189,7 +198,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
 	unsigned int count;
 
 
-  unsigned int loop = 2;
+  unsigned int loop = 1;
 
 	do {
 		/* Reset the UART timeout early so that we don't miss one */
@@ -215,7 +224,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
 		tail = pdc->ofs;
 
     at91_adc_pdc_log();
-    printk(KERN_INFO "head:0x%x, tail:0x%x \n", head, tail);
+    printk(KERN_DEBUG "head:0x%x, tail:0x%x \n", head, tail);
 
 		/* If the PDC has switched buffers, RPR won't contain
 		 * any address within the current buffer. Since head
@@ -247,13 +256,15 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
       //tty_insert_flip_string(tport, pdc->buf + pdc->ofs,
       //count);
 
-#if 0
+#if 1
       if (idev == NULL) {
         /* okay this is just for test : dump the data */
         memdump(pdc->buf + pdc->ofs, count);
       } else {
         /* TODO: compute mean or median filter on all datas available */
         /* HERE: take only the first one */
+        printk(KERN_INFO "buf:%x, ofs;%x, count:%x", pdc->buf, pdc->ofs, count);
+
         u16 * buffer = (u16 *)pdc->buf + pdc->ofs;
         /* push to iio buffer */
         iio_push_to_buffers((struct iio_dev *)idev, buffer);
@@ -281,7 +292,7 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
 			rx_idx = !rx_idx;
 			adc_dma->pdc_rx_idx = rx_idx;
 		}
-	} while ( (loop-- > 0) && (head >= pdc->dma_size) );
+	} while ( (--loop > 0) && (head >= pdc->dma_size) );
 
 	/*
 	 * Drop the lock here since it might end up calling
