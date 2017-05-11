@@ -19,7 +19,7 @@
      --------------------------------------------------------------
      Group 0 |	TIOA0: CPW1#    (pwm0) |	TIOB0: CPW1 (pwm1)
      Group 1 |	TIOA1: not used (pwm2) |	TIOB1: Trig Low (pwm3) = SW2
-     Group 2 |	TIOA2: not used (pwm4) |	TIOB2: Trig High (pwm5)= SW1
+     Group 2 |	TIOA2: ADC trigger     |	TIOB2: Trig High (pwm5)= SW1
 
  *      - “CPW1#” is a copy of “CPW1” except that this wave form is never flat
  *       (i.e. cycle rate is not equal to 0% nether 100%).
@@ -80,7 +80,7 @@
  * Log helper
  * Usage: Uncomment this line to enable debub log level & LOG_ macro
  */
-//#define DEBUG
+#define DEBUG
 
 #define LOG(level, ...)                                                 \
   {                                                                     \
@@ -119,7 +119,7 @@
 #define C_SMP_START_LOW			345	// Start of low level sampling period (30us)
 #define C_SMP_STOP_LOW			460	// End of low level sampling period (40us)
 #define C_SMP_START_HIGH		460	// Start of high level sampling period (40us)
-#define C_SMP_STOP_HIGH			575	// End of high level sampling period (50us)
+#define C_SMP_STOP_HIGH			1035	// End of high level sampling period (90)
 /*
 #define C_SMP_START_LOW			345	// Start of low level sampling period (30us)
 #define C_SMP_STOP_LOW			460	// End of low level sampling period (40us)
@@ -350,16 +350,14 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
    * In order to implement CPW driver, as historical solution,
    * the TC BLOCK 0 is organized as follow:
    *
-   *            | index 0 (TIOA)      | index 1 (TIOB)
+   *            | index 0 (TIOA)          | index 1 (TIOB)
    * --------------------------------------------------------------------
-   * group TC0  | pwm0:triggers (1)   |  pwm1: CPW 1 output
-   * group TC1  | pwm2:               |  pwm3: SW 2 => trigger the low part of CPW 1
-   * group TC2  | pwm4:               |  pwm5: SW 1 => trigger the high part of CPW 1
+   * group TC0  | pwm0: internal triggers |  pwm1: CPW 1 output
+   * group TC1  | pwm2:                   |  pwm3: SW 2 => trigger the low part of CPW 1
+   * group TC2  | pwm4: ADC triggers      |  pwm5: SW 1 => trigger the high part of CPW 1
    *
-   *  (1) TIOA0 triggers internal CAN conversion
-   *      but also group 1 and group 2 start !
    *
-   * SPEC : SW 1 generate a 10 us burst after 80 us starting a *rising* edge of TIOA,
+   * SPEC : SW 1 generate a 10 us burst after XX us starting a *rising* edge of TIOA,
    *        then this signal block the high level part (12V, 9V, 6V, 3V) of CPW 1
    *        injected to CAN and trigger again on next rising edge (FIX THIS double trigger !).
    *      : SW 2 generate a 10 us burst after 80 us starting a *falling* edge of TIOA,
@@ -438,27 +436,33 @@ static int atmel_tcb_pwm_request_patched(struct pwm_chip *chip,
   __raw_writel(C_SMP_START_LOW, regs + ATMEL_TC_REG(group_index, RB));
   __raw_writel(C_SMP_STOP_LOW, regs + ATMEL_TC_REG(group_index, RC));
 
+  // reset output
+  __raw_writel(ATMEL_TC_SWTRG | ATMEL_TC_CLKDIS,
+               regs + ATMEL_TC_REG(group_index, CCR));
+
   /* TC2 Channel Mode Register (output connected to TIOB2) */
   group_index = 2;
+
 	cmr =
     // Waveform Operating Mode / WAVSEL = 10 (up counting) / Clock stop on reaching RC
     ATMEL_TC_TIMER_CLOCK2 | ATMEL_TC_WAVE | ATMEL_TC_WAVESEL_UP_AUTO | ATMEL_TC_CPCSTOP |
-    // TIOB: Enable external trigger from XC2, Event detection rising edge
+    // Enable external trigger from XC2, Event detection rising edge
     ATMEL_TC_ENETRG | ATMEL_TC_EEVT_XC2 | ATMEL_TC_EEVTEDG_RISING |
-    // TIOB: No software trigger action, set on reaching RB, Clear on reaching RC
-    ATMEL_TC_BSWTRG_NONE | ATMEL_TC_BCPB_SET | ATMEL_TC_BCPC_CLEAR;
+    // TIOB (SW1) set to '1' by software trigger
+    ATMEL_TC_BSWTRG_SET |
+    // TIOA (ADC trigger): No software trigger action, set on reaching RA, Clear on reaching RC
+    ATMEL_TC_ASWTRG_NONE | ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
 
   __raw_writel(cmr, regs + ATMEL_TC_REG(group_index, CMR));
 
   /* TC2 reg values */
-  __raw_writel(C_SMP_START_HIGH, regs + ATMEL_TC_REG(group_index, RB));
   __raw_writel(C_SMP_STOP_HIGH, regs + ATMEL_TC_REG(group_index, RC));
+  __raw_writel(C_SMP_START_HIGH, regs + ATMEL_TC_REG(group_index, RA));
 
-  /* Stop clock + software trigger to initialise outputs */
-  for (group_index = 1; group_index <= 2; group_index++) {
-  		__raw_writel(ATMEL_TC_SWTRG | ATMEL_TC_CLKDIS,
-                   regs + ATMEL_TC_REG(group_index, CCR));
-  }
+    // reset output
+  __raw_writel(ATMEL_TC_SWTRG | ATMEL_TC_CLKDIS,
+               regs + ATMEL_TC_REG(group_index, CCR));
+
 
   // log for debug
   //DUMP_REG(chip);
