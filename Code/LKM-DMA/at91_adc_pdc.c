@@ -18,7 +18,7 @@
 
 // cdev / dev (character driver entry in /dev)
 //  > enable dev_dbg() log - KEEP THIS LINE BEFORE  "#include <linux/device.h>" !!
-#define DEBUG
+// #define DEBUG
 #include <linux/device.h>
 
 // io access
@@ -31,8 +31,7 @@
 #include "at91_adc_pdc.h"
 
 #define AT91SAM9260_BASE_ADC 0xfffe0000
-//#define PDC_BUFFER_SIZE		40 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
-#define PDC_BUFFER_SIZE		0x1000 /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
+#define PDC_BUFFER_SIZE		40  /* 5 ms x 2 Bytes (>10bits) x Nb channels(4) = 5 x 2 x 4 */
 
 
 /* driver stuff */
@@ -45,7 +44,7 @@ static inline u32 at91_adc_dma_readl(u32 reg) {
 }
 
 static inline void at91_adc_dma_writel(u32 reg, u32 value) {
-  printk(KERN_INFO "write at %x: %x\n", reg, value);
+  printk(KERN_DEBUG "write at %x: %x\n", reg, value);
 	__raw_writel(value, adc_dma_base - 0x100 + reg);
 }
 
@@ -89,7 +88,7 @@ static void memdump(unsigned char	*buf, int size_in_char) {
 
   printk(KERN_INFO "%p:%d [0x%x]\n", buf, size, size);
 
-#if 0
+#if 1
   for (line = 0; line < size; line += col_size) {
     pos = snprintf(line_buff, sizeof(line_buff), " %x:", line);
     for (col = 0; (col < col_size) && (line + col < size) ; col++) {
@@ -223,8 +222,10 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
 		head = at91_adc_dma_readl(ATMEL_PDC_RPR) - pdc->dma_addr;
 		tail = pdc->ofs;
 
+#if 0 // DO NOT ENABLE THIS LOG AS IT HAVE SIDE EFFECT ON DATA ORDERING
     at91_adc_pdc_log();
     printk(KERN_DEBUG "head:0x%x, tail:0x%x \n", head, tail);
+#endif
 
 		/* If the PDC has switched buffers, RPR won't contain
 		 * any address within the current buffer. Since head
@@ -261,13 +262,27 @@ void at91_adc_rx_from_pdc(struct at91_adc_dma *adc_dma, struct iio_dev *idev)
         /* okay this is just for test : dump the data */
         memdump(pdc->buf + pdc->ofs, count);
       } else {
-        /* TODO: compute mean or median filter on all datas available */
-        /* HERE: take only the first one */
-        printk(KERN_INFO "buf:%x, ofs;%x, count:%x", pdc->buf, pdc->ofs, count);
 
-        u16 * buffer = (u16 *)pdc->buf + pdc->ofs;
+        u16 * buffer_start = (u16 *)pdc->buf + pdc->ofs;
+        u16 * buffer_end = (u16 *)pdc->buf + pdc->ofs + count * ( idev->scan_bytes / 2 );
+        u16 * buffer;
+
+
+#if 0 // DO NOT ENABLE THIS LOG AS IT HAVE SIDE EFFECT ON DATA ORDERING
+        static int trace_index = 0;
+
+        if ( !(trace_index++ % 100) ) {
+          printk(KERN_INFO "buf:%p, ofs:%x => start:%p, count:%x => end:%p, scan_bytes:%d",
+               pdc->buf, pdc->ofs, buffer_start, count, buffer_end, idev->scan_bytes);
+          memdump(pdc->buf + pdc->ofs, count);
+        }
+#endif
+
         /* push to iio buffer */
-        iio_push_to_buffers((struct iio_dev *)idev, buffer);
+        for (buffer = buffer_start; buffer < buffer_end; buffer += ( idev->scan_bytes / 2 )) {
+          iio_push_to_buffers((struct iio_dev *)idev, buffer);
+        }
+
       }
 #else
        memdump(pdc->buf + pdc->ofs, count);
@@ -323,13 +338,13 @@ int at91_adc_pdc_init(struct at91_adc_dma* adc_dma_data, struct iio_dev *idev) {
     result = PTR_ERR(adc_dma_base);
     goto err_release_mem;
   }
-  printk(KERN_INFO "%s: iomem done\n", dev_name(&idev->dev));
+  printk(KERN_DEBUG "%s: iomem done\n", dev_name(&idev->dev));
 
   /* Init DMA register control */
   at91_adc_prepare_rx_pdc(adc_dma_data, idev);
 
   /* We Made it! */
-  printk(KERN_INFO "%s: pdc init done", dev_name(&idev->dev));
+  printk(KERN_DEBUG "%s: pdc init done", dev_name(&idev->dev));
   return 0;
 
  err_release_mem:

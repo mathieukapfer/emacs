@@ -4,6 +4,15 @@
 #include <linux/iio/iio.h>
 
 /* Peripheric DMA Controler primitive (PDC) */
+/*
+
+                                    +-------------------------+
+ +-------+     +------------+ ENDRX | +-----+ DRDY +-------+  | TIOAX +-------+
+ | User  |---->| IIO buffer |<------|-| PDC |<-----|  ADC  |<-|-------|  PWM  |
+ +-------+     +------------+       | +-----+      +-------+  |       +-------+
+                                    +-------------------------+
+
+ */
 
 /* driver dma stuff */
 struct at91_adc_dma_buffer {
@@ -23,7 +32,7 @@ struct at91_adc_dma {
 int at91_adc_pdc_init(struct at91_adc_dma* adc_dma_data, struct iio_dev *idev);
 void at91_adc_pdc_exit(void);
 
-/* start & stop the data transfer from ADC to PDC */
+/* start & stop the data transfer from ADC to PDC on Data ready (DRDY) */
 void at91_adc_pdc_start_rx(struct at91_adc_dma *adc_dma_data);
 void at91_adc_pdc_stop_rx(void);
 

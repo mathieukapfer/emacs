@@ -37,7 +37,7 @@
 #define ENABLE_PDC_
 #define ENABLE_PDC_INT
 
-#define DEBUG
+// #define DEBUG
 #define LOG(level, ...)                                                 \
   {                                                                     \
     char msg[200];                                                      \
@@ -56,7 +56,7 @@
 #define LOG_ENTER_     LOG(KERN_INFO, "called");
 #define LOG_DEBUG(...) LOG(KERN_DEBUG, __VA_ARGS__)
 #define LOG_INFO(...)  LOG(KERN_INFO, __VA_ARGS__)
-#define LOG_REG(reg)   LOG_INFO("%s:@%x:0x%x", #reg,                \
+#define LOG_REG(reg)   LOG_DEBUG("%s:@%x:0x%x", #reg,                \
                                 AT91_ADC_##reg,                     \
                                 at91_adc_readl(st, AT91_ADC_##reg)  \
                                 );
