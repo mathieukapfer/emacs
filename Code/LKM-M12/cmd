@@ -1,1 +1,2 @@
 echo 56 > /sys/class/gpio/unexport
+insmod  gpio_custom_debounced.ko

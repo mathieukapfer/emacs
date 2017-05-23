@@ -35,8 +35,10 @@
 struct gpio_custom_debounced {
   int gpio;
 	int state;
-	int debounce_timer_rising_edge;
-	int debounce_timer_falling_edge;
+  struct timer_list release_timer;
+	unsigned int debounce_timer_rising_edge;  /* in msecs */
+	unsigned int debounce_timer_falling_edge; /* in msecs */
+	unsigned int release_delay; /* in msecs */
   const char * label;
   int irq;
 };
@@ -47,6 +49,7 @@ static struct gpio_custom_debounced my_gpio = {
   .gpio = 56, /* micro-switch 1: PB24 = 32 + 24 =*/
   .debounce_timer_rising_edge = 1,
   .debounce_timer_falling_edge = 0,
+  .release_delay = 2000,
   .label = "presence-M12V",
 };
 
@@ -56,17 +59,41 @@ static const struct of_device_id gpio_custom_debounced_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, gpio_custom_debounced_of_match);
 
+static void gpio_custom_debounced_timer(unsigned long _data)
+{
+  LOG_ENTER;
+
+  struct gpio_custom_debounced *bdata = (struct gpio_custom_debounced *)_data;
+  bdata->state = 0;
+}
 
 static irqreturn_t gpio_custom_debounced_edge_isr(int irq, void *dev_id)
 {
-  struct gpio_custom_debounced *my_gpio =  dev_id;
-  int state = gpio_get_value_cansleep(my_gpio->gpio);
+  struct gpio_custom_debounced *ddata =  dev_id;
+  int state = gpio_get_value_cansleep(ddata->gpio);
 
-  LOG_INFO("state of %d is %d", my_gpio->gpio, state);
+  LOG_INFO("state of %d is %d", ddata->gpio, state);
+
+  if (state > 0) {
+    /* rising edge: no delay */
+    ddata->state = state;
+    /* clear remainging timer */
+    if (ddata->release_delay) {
+      del_timer(&ddata->release_timer);
+    }
+  } else {
+    /* falling edge */
+    if (ddata->release_delay) {
+      /* change state after delay */
+      mod_timer(&ddata->release_timer,
+                jiffies + msecs_to_jiffies(ddata->release_delay));
+    } else {
+      ddata->state = state;
+    }
+  }
 
   return IRQ_HANDLED;
 }
-
 
 
 static int gpio_custom_debounced_probe(struct platform_device *pdev)
@@ -75,8 +102,18 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 	int irq;
   int error;
 
-  /* TODO */
   LOG_ENTER;
+
+  /* */
+
+  /*
+  ddata = devm_kzalloc(dev, size, GFP_KERNEL);
+	if (!ddata) {
+		dev_err(dev, "failed to allocate state\n");
+		return -ENOMEM;
+    }*/
+
+  platform_set_drvdata(pdev, &my_gpio);
 
   /* request gpio */
   error = devm_gpio_request_one(&pdev->dev, my_gpio.gpio,
@@ -103,6 +140,10 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 
   dev_info(dev, "IRQ %d requested", my_gpio.irq);
 
+  /* create timer */
+  setup_timer(&my_gpio.release_timer, gpio_custom_debounced_timer,
+              (unsigned long) &my_gpio);
+
   /* install irs */
   error = devm_request_any_context_irq
     (&pdev->dev, irq,
@@ -121,9 +162,8 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 
 static int gpio_custom_debounced_remove(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev;
-  /* TODO */
-  LOG_ENTER;
+  struct gpio_custom_debounced *ddata = (struct gpio_custom_debounced *) platform_get_drvdata(pdev);
+  del_timer(&ddata->release_timer);
 
   return 0;
 }
