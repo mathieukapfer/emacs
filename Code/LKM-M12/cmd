@@ -1,0 +1,1 @@
+echo 56 > /sys/class/gpio/unexport

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-target=192.168.0.199
+target=192.168.0.190
 root_path=/mnt/datas/opt/dev
 
 my_scp() {
