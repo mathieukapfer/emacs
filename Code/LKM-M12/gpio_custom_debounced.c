@@ -31,25 +31,31 @@
 #include "log.h"
 
 #define DRV_NAME	"gpio-custom-debounced"
+#define USE_HR_TIMER
 
 struct gpio_custom_debounced {
   int gpio;
 	int state;
-  struct timer_list release_timer;
-	unsigned int debounce_timer_rising_edge;  /* in msecs */
-	unsigned int debounce_timer_falling_edge; /* in msecs */
-	unsigned int release_delay; /* in msecs */
+  int pending_state;
+#ifdef USE_HR_TIMER
+  struct hrtimer pending_value_timer;
+#else
+  struct timer_list pending_value_timer;
+#endif
+	unsigned int rising_delay;  /* in usecs */
+	unsigned int falling_delay; /* in usecs */
   const char * label;
   int irq;
+  spinlock_t lock;
+
 };
 
 /* TODO: to be replaced by devtree data */
 static struct gpio_custom_debounced my_gpio = {
-  //.gpio = 69, /* presence -12V: PC05 = 32*2 + 5*/
-  .gpio = 56, /* micro-switch 1: PB24 = 32 + 24 =*/
-  .debounce_timer_rising_edge = 1,
-  .debounce_timer_falling_edge = 0,
-  .release_delay = 2000,
+  .gpio = 69, /* presence -12V: PC05 = 32*2 + 5*/
+  //.gpio = 56, /* micro-switch 1: PB24 = 32 + 24 =*/
+  .falling_delay = 0,
+  .rising_delay = 2000,
   .label = "presence-M12V",
 };
 
@@ -59,39 +65,98 @@ static const struct of_device_id gpio_custom_debounced_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, gpio_custom_debounced_of_match);
 
-static void gpio_custom_debounced_timer(unsigned long _data)
-{
-  LOG_ENTER;
-
-  struct gpio_custom_debounced *bdata = (struct gpio_custom_debounced *)_data;
-  bdata->state = 0;
+#ifdef USE_HR_TIMER
+static enum hrtimer_restart gpio_custom_debounced_timer(struct hrtimer *hr_timer) {
+  struct gpio_custom_debounced *ddata =
+    container_of(hr_timer, struct gpio_custom_debounced, pending_value_timer);
+  ddata->state = ddata->pending_state;
+  LOG_INFO("state of %d is %d (%d) [HR] ", ddata->gpio, ddata->state, ddata->pending_state);
+  return HRTIMER_NORESTART;
 }
+#else
+static void gpio_custom_debounced_timer(unsigned long _data) {
+  struct gpio_custom_debounced *ddata = (struct gpio_custom_debounced *)_data;
+  ddata->state = ddata->pending_state;
+  LOG_INFO("state of %d is %d (%d) ", ddata->gpio, ddata->state, ddata->pending_state);
+}
+#endif
+
 
 static irqreturn_t gpio_custom_debounced_edge_isr(int irq, void *dev_id)
 {
   struct gpio_custom_debounced *ddata =  dev_id;
-  int state = gpio_get_value_cansleep(ddata->gpio);
+  //int state = gpio_get_value_cansleep(ddata->gpio);
+	unsigned long flags;
+  int state;
 
-  LOG_INFO("state of %d is %d", ddata->gpio, state);
+#if 0
+  static int display_counter;
+
+  if (display_counter++ % 1000 == 0) {
+    // LOG_INFO("[isr-1000] state of %d is %d", ddata->gpio, state);
+  }
+#endif
+
+  spin_lock_irqsave(&ddata->lock, flags);
+
+  state = gpio_get_value(ddata->gpio);
+  // LOG_INFO("ENTER: %d:%d, f:%d p:%d) ", ddata->gpio, state, ddata->state, ddata->pending_state);
 
   if (state > 0) {
-    /* rising edge: no delay */
-    ddata->state = state;
-    /* clear remainging timer */
-    if (ddata->release_delay) {
-      del_timer(&ddata->release_timer);
+    /* rising edge */
+    if (ddata->rising_delay) {
+      /* change state after delay */
+      ddata->pending_state = state;
+#ifdef USE_HR_TIMER
+      hrtimer_start(&ddata->pending_value_timer,
+                    ktime_set(0, ddata->rising_delay * 1000),
+                    HRTIMER_MODE_REL);
+
+#else
+      mod_timer(&ddata->pending_value_timer,
+                jiffies + usecs_to_jiffies(ddata->rising_delay));
+#endif
+    } else {
+      /* change state now */
+      ddata->state = state;
+      ddata->pending_state = state;
+#ifdef USE_HR_TIMER
+      if (hrtimer_active(&ddata->pending_value_timer))
+        hrtimer_cancel(&ddata->pending_value_timer);
+#else
+      del_timer(&ddata->pending_value_timer);
+#endif
+
+
     }
   } else {
     /* falling edge */
-    if (ddata->release_delay) {
+    if (ddata->falling_delay) {
       /* change state after delay */
-      mod_timer(&ddata->release_timer,
-                jiffies + msecs_to_jiffies(ddata->release_delay));
+      ddata->pending_state = state;
+#ifdef USE_HR_TIMER
+      hrtimer_start(&ddata->pending_value_timer,
+                    ktime_set(0, ddata->falling_delay * 1000),
+                    HRTIMER_MODE_REL);
+
+#else
+      mod_timer(&ddata->pending_value_timer,
+                jiffies + usecs_to_jiffies(ddata->falling_delay));
+#endif
     } else {
       ddata->state = state;
+      ddata->pending_state = state;
+#ifdef USE_HR_TIMER
+      if (hrtimer_active(&ddata->pending_value_timer))
+        hrtimer_cancel(&ddata->pending_value_timer);
+#else
+      del_timer(&ddata->pending_value_timer);
+#endif
     }
   }
 
+  LOG_INFO("EXIT : %d:%d, f:%d p:%d) ", ddata->gpio, state, ddata->state, ddata->pending_state);
+  spin_unlock_irqrestore(&ddata->lock, flags);
   return IRQ_HANDLED;
 }
 
@@ -112,6 +177,8 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to allocate state\n");
 		return -ENOMEM;
     }*/
+
+  spin_lock_init(&my_gpio.lock);
 
   platform_set_drvdata(pdev, &my_gpio);
 
@@ -141,8 +208,15 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
   dev_info(dev, "IRQ %d requested", my_gpio.irq);
 
   /* create timer */
-  setup_timer(&my_gpio.release_timer, gpio_custom_debounced_timer,
+#ifdef USE_HR_TIMER
+  hrtimer_init(&my_gpio.pending_value_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+  my_gpio.pending_value_timer.function = gpio_custom_debounced_timer;
+  //my_gpio.pending_value_timer.data = &my_gpio;
+#else
+  setup_timer(&my_gpio.pending_value_timer,
+              gpio_custom_debounced_timer,
               (unsigned long) &my_gpio);
+#endif
 
   /* install irs */
   error = devm_request_any_context_irq
@@ -163,7 +237,12 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 static int gpio_custom_debounced_remove(struct platform_device *pdev)
 {
   struct gpio_custom_debounced *ddata = (struct gpio_custom_debounced *) platform_get_drvdata(pdev);
-  del_timer(&ddata->release_timer);
+#ifdef USE_HR_TIMER
+  if (hrtimer_active(&ddata->pending_value_timer))
+		hrtimer_cancel(&ddata->pending_value_timer);
+#else
+  del_timer(&ddata->pending_value_timer);
+#endif
 
   return 0;
 }

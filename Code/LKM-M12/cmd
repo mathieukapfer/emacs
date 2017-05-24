@@ -1,2 +1,22 @@
 echo 56 > /sys/class/gpio/unexport
+echo 69 > /sys/class/gpio/unexport
 insmod  gpio_custom_debounced.ko
+
+echo 100000 > /sys/class/pwm/pwmchip6/pwm1/duty_cycle
+echo 1 > /proc/sys/kernel/ftrace_enabled
+
+
+**************
+*** ftrace ***
+**************
+mount -t debugfs nodev /sys/kernel/debug
+
+rmmod /mnt/datas/opt/dev/gpio_custom_debounced.ko
+insmod /mnt/datas/opt/dev/gpio_custom_debounced.ko
+cat current_tracer
+cat set_ftrace_filter
+echo "gpio_custom_*" > set_ftrace_filter
+cat set_ftrace_filter
+echo > trace
+reset
+cat trace
