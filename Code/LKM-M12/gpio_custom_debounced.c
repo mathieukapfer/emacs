@@ -12,6 +12,18 @@
  *  published by the Free Software Foundation.
  */
 
+/*
+  device tree :
+
+ gpio-custom-debounced {
+   compatible = "gpio-custom-debounced";
+   presenceM12V-gpios = <&pioC 5 GPIO_ACTIVE_HIGH>;
+   label = "presence-M12V";
+ };
+
+*/
+
+
 #define DEBUG
 
 #include <linux/kernel.h>
@@ -70,14 +82,16 @@ static enum hrtimer_restart gpio_custom_debounced_timer(struct hrtimer *hr_timer
   struct gpio_custom_debounced *ddata =
     container_of(hr_timer, struct gpio_custom_debounced, pending_value_timer);
   ddata->state = ddata->pending_state;
-  LOG_INFO("state of %d is %d (%d) [HR] ", ddata->gpio, ddata->state, ddata->pending_state);
+  LOG_INFO("%d:%d (%d) [HR:%dus/%dus] ",
+           ddata->gpio, ddata->state, ddata->pending_state, ddata->rising_delay, ddata->falling_delay);
   return HRTIMER_NORESTART;
 }
 #else
 static void gpio_custom_debounced_timer(unsigned long _data) {
   struct gpio_custom_debounced *ddata = (struct gpio_custom_debounced *)_data;
   ddata->state = ddata->pending_state;
-  LOG_INFO("state of %d is %d (%d) ", ddata->gpio, ddata->state, ddata->pending_state);
+  LOG_INFO("%d:%d (%d) [delay:%d/%d] ",
+           ddata->gpio, ddata->state, ddata->pending_state, ddata->rising_delayddata->falling_delay, );
 }
 #endif
 
@@ -169,7 +183,7 @@ static int gpio_custom_debounced_probe(struct platform_device *pdev)
 
   LOG_ENTER;
 
-  /* */
+  dev_info(dev, "hrtimer resolution:%d\n", hrtimer_resolution);
 
   /*
   ddata = devm_kzalloc(dev, size, GFP_KERNEL);
