@@ -1,6 +1,6 @@
-(require 'my-grep "~/.emacs.d/my-grep.el")
-(require 'my-cpp-facilites "~/.emacs.d/my-cpp-facilites.el")
-(require 'sr-speedbar "~/.emacs.d/sr-speedbar.el")
+(require 'my-grep "~/.emacs.d/lisp/my-grep.el")
+(require 'my-cpp-facilites "~/.emacs.d/lisp/my-cpp-facilites.el")
+(require 'sr-speedbar "~/.emacs.d/lisp/sr-speedbar.el")
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -63,6 +63,10 @@
 
 (set-face-attribute 'default nil :height 110)
 
+;; all stuff is in 'lisp' dir
+(add-to-list 'load-path "~/.emacs.d/lisp/")
+
+;; ease help request
 (defun my-lookup-elisp ()
   (interactive)
   (elisp-index-search (my-default-entry)))
@@ -188,7 +192,7 @@
 (global-set-key (kbd "M-<right>")  'next-user-buffer) ; ALT + flèche droite
 
 ;; Log parser navigation
-(load-file "~/.emacs.d/my-parse-log.el")
+(load-file "~/.emacs.d/lisp/my-parse-log.el")
 (global-set-key (kbd "C-<return>") 'parse-evse-log)
 
 

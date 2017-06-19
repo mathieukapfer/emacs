@@ -66,7 +66,7 @@
 
 
 ;; load project definition if exist
-(setq my-projects "/home/user/.emacs.d/my-projects.el")
+(setq my-projects "/home/user/.emacs.d/lisp/my-projects.el")
 (if (file-exists-p my-projects)
     (load-file my-projects)
   )
