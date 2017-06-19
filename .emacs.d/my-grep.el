@@ -1,10 +1,10 @@
 (require 'grep)
 (provide 'my-grep)
 
-(defconst my-grep-find-files-pattern "*.cpp *.c *.h *.sm *.am *.cmake CMakeLists.txt")
+(defconst my-grep-find-files-pattern "*.cpp *.c *.h *[^_].sm *.am *.cmake CMakeLists.txt")
 
 (defconst my-grep-find-ignored-files
-  (quote   (".#*" "*.o" "*~")))
+  (quote   (".#*" "*.o" "*~" "*_sm.cpp" "*_sm.h" )))
 
 (defconst my-grep-find-ignored-directories
   (quote ("CVS" ".svn" ".git" "test" ".moc")))
@@ -19,7 +19,7 @@
   (let ((pos (point))
         (default-entry ""))    
     (skip-chars-backward "_a-zA-Z0-9---")
-    (if (looking-at "\\([_a-zA-Z0-9---:]+\\)" )
+    (if (looking-at "\\([_a-zA-Z0-9---]+\\)" )
         (setq default-entry (match-string 1) )
       (setq default-entry "" )     
       )

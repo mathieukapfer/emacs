@@ -11,11 +11,8 @@
    ["#212526" "#ff4b4b" "#b4fa70" "#fce94f" "#729fcf" "#ad7fa8" "#8cc4ff" "#eeeeec"])
  '(auto-save-default nil)
  '(c-basic-offset 2)
- '(compilation-error-regexp-alist
-   (quote
-    (("^\\([[:digit:]]+\\)|\\([[:alnum:]_]+\\.[hcp]+\\):\\([[:digit:]]+\\):.*\\[\\(INFO\\|WARNING\\)?" 2 3 nil
-      (5 . 4))
-     absoft ada aix ant bash borland python-tracebacks-and-caml comma cucumber msft edg-1 edg-2 epc ftnchek iar ibm irix java jikes-file maven jikes-line gcc-include ruby-Test::Unit gnu lcc makepp mips-1 mips-2 msft omake oracle perl php rxp sparc-pascal-file sparc-pascal-line sparc-pascal-example sun sun-ada watcom 4bsd gcov-file gcov-header gcov-nomark gcov-called-line gcov-never-called perl--Pod::Checker perl--Test perl--Test2 perl--Test::Harness weblint)))
+ '(compilation-auto-jump-to-first-error nil)
+ '(compilation-scroll-output (quote first-error))
  '(dired-no-confirm (quote (print revert-subdirs)))
  '(dired-omit-extensions
    (quote
@@ -25,7 +22,7 @@
  '(dired-use-ls-dired nil)
  '(ede-project-directories
    (quote
-    ("/home/user/Projects/ev_link_charger_hermes/code/evse/src")))
+    ("/home/user/Code/LKM-M12" "/home/user/Projects/ev_link_charger/code/evse/src")))
  '(ediff-coding-system-for-write (quote raw-text))
  '(fill-column 80)
  '(flymake-google-cpplint-command (my:cpplint-command))
@@ -34,8 +31,16 @@
  '(grep-find-ignored-directories my-grep-find-ignored-directories)
  '(grep-find-ignored-files my-grep-find-ignored-files)
  '(indent-tabs-mode nil)
+ '(magit-diff-arguments
+   (quote
+    ("--ignore-space-change" "--ignore-all-space" "--no-ext-diff")))
+ '(magit-diff-section-arguments
+   (quote
+    ("--ignore-space-change" "--ignore-all-space" "--no-ext-diff")))
  '(omnisharp-auto-complete-popup-help-delay 1)
  '(omnisharp-imenu-support t)
+ '(projectile-globally-ignored-file-suffixes (quote (".o" ".cmd")))
+ '(projectile-indexing-method (quote alien))
  '(send-mail-function (quote smtpmail-send-it))
  '(show-paren-mode t)
  '(smtpmail-smtp-server "smtp.laposte.net")
@@ -52,7 +57,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#606060" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
+ '(default ((t (:inherit nil :stipple nil :background "#999999" :foreground "black" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 100 :width normal :foundry "unknown" :family "DejaVu Sans Mono"))))
  '(font-lock-comment-face ((t (:foreground "gold"))))
  '(magit-section-highlight ((t (:background "dim gray")))))
 
@@ -63,6 +68,42 @@
   (elisp-index-search (my-default-entry)))
 
 (global-set-key (kbd "ESC <C-f1>") 'my-lookup-elisp)
+
+;; delete space defore saving
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;; Colorize compilation buffer
+(require 'ansi-color)
+(defun colorize-compilation-buffer ()
+  (let ((inhibit-read-only t))
+    (ansi-color-apply-on-region (point-min) (point-max))))
+(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
+;; Compilation error
+;;; parse the merged smc file and jump to source file
+(add-to-list 'compilation-error-regexp-alist
+             'merged-smc)
+
+(add-to-list
+ 'compilation-error-regexp-alist-alist
+ '(merged-smc
+   ;; (REGEXP FILE [LINE COLUMN TYPE ...
+   ;; /*test_prodA.sm:22:*/  goBack pop ...
+    "/\\*\\([A-Za-z_]+\\.[A-Za-z]+\\):\\([[:digit:]]+\\):" 1 2))
+
+;;; parse the merged smc file and jump to source file
+(add-to-list 'compilation-error-regexp-alist
+             'evse-log)
+
+(add-to-list
+ 'compilation-error-regexp-alist-alist
+ '(evse-log
+   ;; (REGEXP FILE [LINE COLUMN TYPE ... - TYPE = (WARNING . INFO)
+   ;; 14195?CTestEvseCaseHermesRe:673 0011 [NOTIC][CTHermesReservation]TEST OK 11
+   ;;<  p num   ><>< filename       >:<line            >         < warn>   | < info   > |  < error                   >
+   "^ ?[[:digit:]]+.\\([[:alnum:]_]+\\):\\([[:digit:]]+\\).*\\[\\(\\(WARN\\)\\|\\(NOTIC\\|INFO\\|DEBUG\\)\\|\\(ERROR\\|FATAL\\|TEST KO\\)\\)"
+   ;;"^ ?[[:digit:]]+.\\([[:alnum:]_]+\\):\\([[:digit:]]+\\)[^[]+\\(\\(WARN\\)\\|\\(NOTIC\\)\\|\\(ERROR\\|FATAL\\|TEST KO\\)\\)"
+   1 2 nil (4 . 5) ))
 
 
 ;; space in C/C++ code
@@ -88,7 +129,7 @@
 (add-hook 'c++-mode-hook 'my:set-my-c++-style)
 
 
-;; rectangle 
+;; rectangle
 ;;; (global-set-key (kbd "M-*") 'kill-rectangle)
 ;;; (global-set-key (kbd "M-µ") 'yank-rectangle)
 
@@ -130,10 +171,10 @@
 )
 
 ;; split window helper in french keyboard
-(global-set-key (kbd "M-&") 'delete-other-windows ) 
+(global-set-key (kbd "M-&") 'delete-other-windows )
 (global-set-key (kbd "M-é") 'split-window-vertically)
 (global-set-key (kbd "M-\"") 'split-window-horizontally)
- 
+
 ;; windows navigation
 (global-set-key (kbd "C-<tab>") 'other-window)
 
@@ -143,9 +184,12 @@
 ;; related shortcut
 ;;(global-set-key (kbd "C-<prior>") 'previous-user-buffer) ; Ctrl+PageDown
 ;;(global-set-key (kbd "C-<next>")  'next-user-buffer) ; Ctrl+PageUp
-(global-set-key (kbd "M-<left>") 'previous-user-buffer) ; ALT+ flèche gauche 
+(global-set-key (kbd "M-<left>") 'previous-user-buffer) ; ALT+ flèche gauche
 (global-set-key (kbd "M-<right>")  'next-user-buffer) ; ALT + flèche droite
 
+;; Log parser navigation
+(load-file "~/.emacs.d/my-parse-log.el")
+(global-set-key (kbd "C-<return>") 'parse-evse-log)
 
 
 ;; grep facilities
@@ -219,7 +263,7 @@
 
 (setq ebrowse-position-stack nil)
 
-;; add icicles 
+;; add icicles
 ;;(add-to-list 'load-path "/home/math/emacs")
 ;;(require 'icicles)
 ;; enable icycles mode
@@ -233,7 +277,7 @@
 (when (> emacs-major-version 23)
   (require 'package)
   (package-initialize)
-  (add-to-list 'package-archives 
+  (add-to-list 'package-archives
                '("melpa" . "http://melpa.milkbox.net/packages/")
                'APPEND))
 

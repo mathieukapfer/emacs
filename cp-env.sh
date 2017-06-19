@@ -7,4 +7,3 @@ do
     mv ~/$i ~/$i.keep
     ln -s $PWD/$i ~/.emacs.d
 done;
-         

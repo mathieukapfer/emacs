@@ -11,38 +11,61 @@
                                       "DriverGPIO"
                                       "DriverLed"
                                       "DriverSC"
-                                      "DriverSPI-Switch"           
+                                      "DriverSPI-Switch"
                                       )
                       :system-include-path '(
                                              "/home/user/Projects/EV_HISTORIC/02_kernel/include"
                                              )
                       )
 
-(ede-cpp-root-project "dev-driver"
-                      :name "new-driver"
-                      :file "/home/user/Code/LKM/Makefile"
+(ede-cpp-root-project "dev-driver2"
+                      :name "dev-driver2"
+                      :file "/home/user/Code/LKM2/Makefile"
                       :include-path '(
-                                      "."           
+                                      "."
                                       )
-                      :system-include-path '(
-                                             "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
-                                             )
+                       :system-include-path '(
+                                              "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                              "/opt/arm/arm-buildroot-linux-gnueabi-4.9.3/usr/arm-buildroot-linux-gnueabi/include/c++/4.9.3"
+                                              )
                       :local-variables
                        '((grep-command . "grep -nHi -e ")
-                         (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 34))
+                         (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 50))
                          )
                       )
 
-(ede-cpp-root-project "new-driver"
-                      :name "new-driver"
-                      :file "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/Makefile"
+(ede-cpp-root-project "dev-driver3"
+                      :name "dev-driver3"
+                      :file "/home/user/Code/LKM-M12/Makefile"
                       :include-path '(
-                                      "."           
+                                      "."
                                       )
-                      :system-include-path '(
-                                             "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
-                                             )
+                       :system-include-path '(
+                                              "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                              "/opt/arm/arm-buildroot-linux-gnueabi-4.9.3/usr/arm-buildroot-linux-gnueabi/include/c++/4.9.3"
+                                              )
+                      :local-variables
+                       '((grep-command . "grep -nHi -e ")
+                         (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 50))
+                         )
                       )
+
+
+
+(ede-cpp-root-project "new-driver"
+                       :name "new-driver"
+                       :file "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/Makefile"
+                       :include-path '(
+                                       "."
+                                       )
+                       :system-include-path '(
+                                              "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                              "/opt/arm/arm-buildroot-linux-gnueabi-4.9.3/usr/arm-buildroot-linux-gnueabi/include/c++/4.9.3"
+                                              )
+                       :spp-table '(
+                                    ("CONFIG_IIO_BUFFER" . "")
+                                    )
+                       )
 
 (ede-cpp-root-project "websocket"
                       :name "websocket"
@@ -142,4 +165,20 @@
                       :spp-table '(
                                    ("Net_API" ."")
                                    )
+                      )
+
+(ede-cpp-root-project "dev-driver-se"
+                      :name "dev-driver-se"
+                      :file "/home/user/Projects/bsp_custom/evlink_charger_bsp_custom_for_pb/documentation/drivers/Makefile"
+                      :include-path '(
+                                      "."
+                                      )
+                       :system-include-path '(
+                                              "/home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/include"
+                                              "/opt/arm/arm-buildroot-linux-gnueabi-4.9.3/usr/arm-buildroot-linux-gnueabi/include/c++/4.9.3"
+                                              )
+                      :local-variables
+                       '((grep-command . "grep -nHi -e ")
+                         (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 50))
+                         )
                       )

@@ -1,6 +1,35 @@
 (provide 'my-cpp-facilites)
 (require 'cl)
 
+
+;; numering of enum
+;; - do the numering
+(defun enum-numbering(start)
+  (interactive)
+  (let ( (loop-quit nil) (num 0) )
+    (goto-char start)
+    (while (and (not loop-quit)
+                (search-forward-regexp "\\(,\\|}\\)" nil t))
+      (if (string= (match-string 0) "}")
+          (setq loop-quit t)
+        (replace-match (format "=%d,"  num))
+        (setq num (+ num 1))
+        )
+      )
+    )
+  )
+;; - search enum definition
+(defun enum-detection()
+  (interactive)
+  (let ((enum-begin 0)
+        (enum-end 0))
+    (search-forward-regexp "enum[[:space:]]+{")
+    (setq enum-begin (match-beginning 0))
+    ;; do the numering
+    (enum-numbering enum-begin)
+    )
+  )
+
 ;; Put in the alist a line like this:
 ;;  ("ext" . ( "toggle_ext_candidate1" "toggle_ext_candidate2" ) )
 (defconst my-head-body-table '
@@ -21,7 +50,7 @@
     )
   )
 
-;; Build toggle file name list 
+;; Build toggle file name list
 ;; Sample: with "foo.cpp" return the list ("foo.h" "foo.hpp")
 (defun my-toggle-header-body--get-file-name-list (a-file-name)
   (let ( (the-base-name (file-name-base a-file-name) )
@@ -62,5 +91,5 @@
 
 
 ;; Related key binding
-(global-set-key (kbd "C-²" ) 'my-toggle-header-body-main) 
-(global-set-key (kbd "C-œ" ) 'my-toggle-header-body-main) 
+(global-set-key (kbd "C-²" ) 'my-toggle-header-body-main)
+(global-set-key (kbd "C-œ" ) 'my-toggle-header-body-main)

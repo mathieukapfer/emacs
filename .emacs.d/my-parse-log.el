@@ -1,4 +1,4 @@
-(require 'projectile)
+;;(require 'projectile)
 
 (defun projectile-find-file_ (initial-input)
   "Jump to a project's file using completion (with initial input)."
@@ -14,7 +14,7 @@
 (defconst parse-evse-log-regexp
   ;; 0215|MasterBehavour:918        0005.6903 [INFO ][MASTER][CTXT]        UpdateUserSession called
   ;;       timestamps      file name            line number
-  "^[[:digit:]]+\\(?:|\\|?\\)\\([[:alnum:]]+\\):\\([[:digit:]]+\\)"
+  "^ ?[[:digit:]]+\\(?:|\\|?\\)\\([[:alnum:]_]+\\):\\([[:digit:]]+\\)"
   ;;(concat "[[:digit:]]+" "\(|\|+\|?\)" "\\([[:alnum:]]+\\)" ":" "\\([[:digit:]]+\\)")
   )
 
@@ -22,7 +22,7 @@
 (defun parse-evse-log ()
   (interactive)
   (beginning-of-line)
-  (message "looking at %s" (eval parse-evse-log-regexp))
+  ;;(message "looking at %s" (eval parse-evse-log-regexp))
   (if (looking-at (eval parse-evse-log-regexp))
       (progn
         (setq filename (match-string 1))
@@ -30,7 +30,7 @@
         ;; (setq filenameandline(format "%s*.cpp:%d" filename (string-to-number linenumber)))
         ;; (message "%s" filenameandline)
         ;; (princ (string-to-vector filename))
-        (projectile-find-file_  filename)
+        (projectile-find-file_  (concat filename ".cpp"))
         (goto-line (string-to-number linenumber))
         ;;(call-interactively 'projectile-find-file nil (string-to-vector filename) )
         ;;(message (directory-files "." (format "%s*" filename)))

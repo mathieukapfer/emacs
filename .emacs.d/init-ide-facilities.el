@@ -1,4 +1,5 @@
-; force c++ mode for *.h files
+
+;; force c++ mode for *.h files
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
 ;; FACILITES - STEP1: auto complete and snippet
@@ -53,14 +54,14 @@
 
 ;; let's define a function which adds semantic as a suggestion backend to auto complete
 ;; and hook this function to c-mode-common-hook
-(defun my:add-semantic-to-autocomplete() 
+(defun my:add-semantic-to-autocomplete()
   (add-to-list 'ac-sources 'ac-source-semantic)
 )
 (add-hook 'c-mode-common-hook 'my:add-semantic-to-autocomplete)
 (add-hook 'c++-mode-common-hook 'my:add-semantic-to-autocomplete)
 
 
-;; turn on ede mode 
+;; turn on ede mode
 (global-ede-mode 1)
 
 
@@ -114,33 +115,8 @@
 ;; (global-srecode-minor-mode 1)
 
 
-;; FACILITES - STEP5: flycheck
-;; ================================================================================
-
-;; dependencies:
-;;   - install 'flymake-google...' package
-;;   - install 'flymake-cursor' package
-;; 
-; start flymake-google-cpplint-load
-; let's define a function for flymake initialization
-
-(defun my:cpplint-command()
-  (setq cpplint-cmd "/home/user/Projects/ev_link_charger_hermes/testengine/script/cpplint-warning.sh")
-  (if (not (file-exists-p cpplint-cmd) )
-      (setq cpplint-cmd "/usr/local/bin/cpplint" )
-    (setq cpplint-cmd cpplint-cmd)
-    )
-  )
-
-(defun my:flymake-google-init () 
-  (require 'flymake-google-cpplint)
-  (custom-set-variables
-   '(flymake-google-cpplint-command (my:cpplint-command)))
-  (flymake-google-cpplint-load)
-  )
-
-(add-hook 'c-mode-hook 'my:flymake-google-init)
-(add-hook 'c++-mode-hook 'my:flymake-google-init)
+;; code checker
+(load-file "/home/user/.emacs.d/init-ide-checker-flycheck.el")
 
 
 ;; cmake support
@@ -194,28 +170,28 @@
 (defvar semantic-tags-location-ring (make-ring 20))
 
 (defun semantic-goto-definition (point)
-  "Goto definition using semantic-ia-fast-jump   
+  "Goto definition using semantic-ia-fast-jump
 save the pointer marker if tag is found"
   (interactive "d")
   (condition-case err
-      (progn                            
-        (ring-insert semantic-tags-location-ring (point-marker))  
+      (progn
+        (ring-insert semantic-tags-location-ring (point-marker))
         (semantic-ia-fast-jump point))
     (error
-     ;;if not found remove the tag saved in the ring  
+     ;;if not found remove the tag saved in the ring
      (set-marker (ring-remove semantic-tags-location-ring 0) nil nil)
      (signal (car err) (cdr err)))))
 
-(defun semantic-pop-tag-mark ()             
-  "popup the tag save by semantic-goto-definition"   
-  (interactive)                                                    
-  (if (ring-empty-p semantic-tags-location-ring)                   
-      (message "%s" "No more tags available")                      
-    (let* ((marker (ring-remove semantic-tags-location-ring 0))    
-              (buff (marker-buffer marker))                        
-                 (pos (marker-position marker)))                   
-      (if (not buff)                                               
-            (message "Buffer has been deleted")                    
-        (switch-to-buffer buff)                                    
-        (goto-char pos))                                           
+(defun semantic-pop-tag-mark ()
+  "popup the tag save by semantic-goto-definition"
+  (interactive)
+  (if (ring-empty-p semantic-tags-location-ring)
+      (message "%s" "No more tags available")
+    (let* ((marker (ring-remove semantic-tags-location-ring 0))
+              (buff (marker-buffer marker))
+                 (pos (marker-position marker)))
+      (if (not buff)
+            (message "Buffer has been deleted")
+        (switch-to-buffer buff)
+        (goto-char pos))
       (set-marker marker nil nil))))

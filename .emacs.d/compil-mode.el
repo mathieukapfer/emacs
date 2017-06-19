@@ -13,7 +13,7 @@
    ;; (REGEXP FILE [LINE COLUMN TYPE ... - TYPE = (WARNING . INFO)
    ;; 14195?CTestEvseCaseHermesRe:673 0011 [NOTIC][CTHermesReservation]TEST OK 11
    ;;<  p num   ><>< filename       >:<line            >
-   "^[[:digit:]]+.\\([[:alnum:]_]+\\):\\([[:digit:]]+\\).*\\(\\(WARN\\)\\|\\(INFO\\|NOTIC\\|DEBUG\\)\\|\\(ERROR\\|FATAL\\|TEST KO\\)\\)"
+   "^[[:digit:]]+.\\([[:alnum:]_]+\\):\\([[:digit:]]+\\).* \\[\\(\\(WARN\\)\\|\\(INFO\\|NOTIC\\|DEBUG\\)\\|\\(ERROR\\|FATAL\\|TEST KO\\)\\)"
    1 2 nil (4 . 5) ))
 
    ;;   1 (progn (concat (match-string 1) ".cpp")) ))
