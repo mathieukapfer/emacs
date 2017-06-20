@@ -127,7 +127,7 @@ See URL
                     flycheck-option-comma-separated-list)
             (option "--root=" flycheck-googlelint-root concat)
             (option "--linelength=" flycheck-googlelint-linelength concat)
-            source-original)
+            source)
   :error-patterns
   ((warning line-start (file-name) ":" line ":  " (message) line-end))
   :modes (c-mode c++-mode))
