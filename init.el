@@ -25,6 +25,9 @@
     ("/home/user/Code/LKM-M12" "/home/user/Projects/ev_link_charger/code/evse/src")))
  '(ediff-coding-system-for-write (quote raw-text))
  '(fill-column 80)
+ '(flycheck-c/c++-googlelint-executable (my:cpplint-command))
+ '(flycheck-check-syntax-automatically (quote (save idle-change new-line mode-enabled)))
+ '(flycheck-disabled-checkers (quote (c/c++-gcc)))
  '(flymake-google-cpplint-command (my:cpplint-command))
  '(font-lock-mode t t (font-lock))
  '(graphviz-dot-view-command "xdot %s")
@@ -46,6 +49,7 @@
  '(smtpmail-smtp-server "smtp.laposte.net")
  '(smtpmail-smtp-service 25)
  '(speedbar-default-position (quote left))
+ '(split-width-threshold nil)
  '(sr-speedbar-right-side nil)
  '(tab-width 2)
  '(tags-auto-read-changed-tag-files t)
@@ -186,7 +190,7 @@
 (load-file "~/.emacs.d/init-buffer-nagigation.el")
 
 ;; related shortcut
-;;(global-set-key (kbd "C-<prior>") 'previous-user-buffer) ; Ctrl+PageDown
+;(global-set-key (kbd "C-<prior>") 'previous-user-buffer) ; Ctrl+PageDown
 ;;(global-set-key (kbd "C-<next>")  'next-user-buffer) ; Ctrl+PageUp
 (global-set-key (kbd "M-<left>") 'previous-user-buffer) ; ALT+ flèche gauche
 (global-set-key (kbd "M-<right>")  'next-user-buffer) ; ALT + flèche droite
