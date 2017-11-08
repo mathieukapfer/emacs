@@ -182,3 +182,20 @@
                          (grep-find-command . ("find /home/user/Projects/bsp/ev_link_bsp/output/build/linux-4.4.14/drivers/ -type f -exec grep -nH -e  {} +" . 50))
                          )
                       )
+
+
+;; (ede-cpp-root-project "testengine"
+;;                       :name "testengine"
+;;                       :file "/home/user/Projects/ev_link_charger/testengine/Makefile.am"
+;;                       :include-path '(
+;;                                       "/home/user/Projects/ev_link_charger/testengine/test-src"
+;;                                       "/home/user/Projects/ev_link_charger/testengine/src"
+;;                                       "/home/user/Projects/ev_link_charger/code/evse/src/main/test/Simu"
+;;                                       "."
+;;                                       )
+;;                        :system-include-path '()
+;;                       :local-variables
+;;                        '((grep-command . "grep -nHi -e ")
+;;                          (grep-find-command . ("find /home/user/Projects/ev_link_charger/testengine/ /home/user/Projects/ev_link_charger/code/evse/src/main/test/Simu -type f -exec grep -nH -e  {} +" . 50))
+;;                          )
+;;                       )

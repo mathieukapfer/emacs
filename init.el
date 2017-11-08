@@ -225,15 +225,15 @@
 ;; MOVE IN CUSTOM PART
 ;; (setq tags-case-fold-search 'nil)
 
-(global-set-key (kbd "M-<f2>")  'find-tag)
+(global-set-key (kbd "s-<f2>")  'find-tag)
 
 (defun find-tags-next ()
   (interactive)
   (find-tag "dummy" t);
   )
 
-(global-set-key (kbd "M-<f3>") 'find-tags-next)
-(global-set-key (kbd "M-<f4>") 'pop-tag-mark)
+(global-set-key (kbd "s-<f3>") 'pop-tag-mark)
+(global-set-key (kbd "s-<f4>") 'find-tags-next)
 
 
 ;; ebrowse
@@ -305,3 +305,4 @@
 (when (> emacs-major-version 23)
   (load-file "~/.emacs.d/init-ide-facilities.el")
 )
+(put 'downcase-region 'disabled nil)
