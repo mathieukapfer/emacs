@@ -2,6 +2,7 @@
 (require 'cl)
 
 
+
 ;; numering of enum
 ;; - do the numering
 (defun enum-numbering(start)
@@ -9,10 +10,10 @@
   (let ( (loop-quit nil) (num 0) )
     (goto-char start)
     (while (and (not loop-quit)
-                (search-forward-regexp "\\(,\\|}\\)" nil t))
-      (if (string= (match-string 0) "}")
+                (search-forward-regexp "^[[:space:]]+\\([[:alnum:]_]+\\)[[:space:]]*\n*\\(,\\|}\\)" nil t))
+      (if (string= (match-string 2) "}")
           (setq loop-quit t)
-        (replace-match (format "=%d,"  num))
+        (replace-match (format "=%d,"  num) t t nil 2 )
         (setq num (+ num 1))
         )
       )
@@ -23,7 +24,7 @@
   (interactive)
   (let ((enum-begin 0)
         (enum-end 0))
-    (search-forward-regexp "enum[[:space:]]+{")
+    (search-forward-regexp "enum[[:space:]][[:alnum:]_]+[[:space:]\n]{")
     (setq enum-begin (match-beginning 0))
     ;; do the numering
     (enum-numbering enum-begin)

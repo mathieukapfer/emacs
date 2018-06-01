@@ -2,6 +2,11 @@
 (require 'my-cpp-facilites "~/.emacs.d/lisp/my-cpp-facilites.el")
 (require 'sr-speedbar "~/.emacs.d/lisp/sr-speedbar.el")
 
+;; '(compilation-error-regexp-alist
+;;   (quote
+;;    (evse-log merged-smc absoft ada aix ant bash borland python-tracebacks-and-caml comma cucumber msft edg-1 edg-2 epc ftnchek iar ibm irix java jikes-file jikes-line gcc-include ruby-Test::Unit gnu lcc makepp mips-1 mips-2 msft omake oracle perl php rxp sparc-pascal-file sparc-pascal-line sparc-pascal-example sun sun-ada watcom 4bsd gcov-file gcov-header gcov-nomark gcov-called-line gcov-never-called perl--Pod::Checker perl--Test perl--Test2 perl--Test::Harness weblint)))
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -12,6 +17,9 @@
  '(auto-save-default nil)
  '(c-basic-offset 2)
  '(compilation-auto-jump-to-first-error nil)
+ '(compilation-error-regexp-alist
+   (quote
+    (evse-log merged-smc bash java gcc-include gnu lcc gcov-file )))
  '(compilation-scroll-output (quote first-error))
  '(dired-no-confirm (quote (print revert-subdirs)))
  '(dired-omit-extensions
@@ -22,7 +30,7 @@
  '(dired-use-ls-dired nil)
  '(ede-project-directories
    (quote
-    ("/home/user/Code/LKM-M12" "/home/user/Projects/ev_link_charger/code/evse/src")))
+    ("/home/user/Projects/wallbox/SW/Applicatif/NEWWBSTEP2_0.E.1_RC1/Sources" "/home/user/Code/LKM-M12" "/home/user/Projects/ev_link_charger/code/evse/src")))
  '(ediff-coding-system-for-write (quote raw-text))
  '(fill-column 80)
  '(flycheck-c/c++-googlelint-executable (my:cpplint-command))
@@ -31,7 +39,7 @@
  '(flymake-google-cpplint-command (my:cpplint-command))
  '(font-lock-mode t t (font-lock))
  '(graphviz-dot-view-command "xdot %s")
- '(grep-find-ignored-directories my-grep-find-ignored-directories)
+ '(grep-find-ignored-directories (quote ("CVS" ".svn" ".git" ".moc")))
  '(grep-find-ignored-files my-grep-find-ignored-files)
  '(indent-tabs-mode nil)
  '(magit-diff-arguments
