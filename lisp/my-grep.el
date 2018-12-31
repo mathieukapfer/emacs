@@ -9,7 +9,7 @@
   :group 'processes)
 
 (defcustom my-grep-find-files-pattern
-  '("*.cpp *.c *.h *[^_].sm *.am *.cmake CMakeLists.txt")
+  '("*.cpp *.c *.h *[^_].sm *.am *.cmake CMakeLists.txt *.py")
   "A list of file pattern to find"
   :group 'my-grep
   :type '(repeat string)

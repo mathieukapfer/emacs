@@ -4,7 +4,7 @@
 
 ;; '(compilation-error-regexp-alist
 ;;   (quote
-;;    (evse-log merged-smc absoft ada aix ant bash borland python-tracebacks-and-caml comma cucumber msft edg-1 edg-2 epc ftnchek iar ibm irix java jikes-file jikes-line gcc-include ruby-Test::Unit gnu lcc makepp mips-1 mips-2 msft omake oracle perl php rxp sparc-pascal-file sparc-pascal-line sparc-pascal-example sun sun-ada watcom 4bsd gcov-file gcov-header gcov-nomark gcov-called-line gcov-never-called perl--Pod::Checker perl--Test perl--Test2 perl--Test::Harness weblint)))
+;;    (evse-log merged-smc absoft ada aix ant bash borland python-tracebacks-and-caml comma cucumber msft edg-1 edg-2 epc ftnchek iar ibm irix java jikes-file jikes-line gcc-include ruby-Test::Unit gnu lcc makepp mips-1 mips-2 msft omake oracle perl php rxp sparc-pascal-file sparc-pascal-line sparc-pascal-example sun sun-ada watcom 4bsd gcov-file gcov-header gcov-nomark gcov-called-line gcov-never-called perl--Pod::Checker perl--Test perl--Test2 perl--Test::Harness weblint))
 
 
 (custom-set-variables
@@ -50,6 +50,9 @@
     ("--ignore-space-change" "--ignore-all-space" "--no-ext-diff")))
  '(omnisharp-auto-complete-popup-help-delay 1)
  '(omnisharp-imenu-support t)
+ '(package-selected-packages
+   (quote
+    (jedi pydoc-info pydoc magit flycheck elpy auto-complete)))
  '(projectile-globally-ignored-file-suffixes (quote (".o" ".cmd")))
  '(projectile-indexing-method (quote alien))
  '(send-mail-function (quote smtpmail-send-it))
@@ -316,3 +319,9 @@
   (load-file "~/.emacs.d/init-ide-facilities.el")
 )
 (put 'downcase-region 'disabled nil)
+
+
+
+;; for python / elpy setting
+;; =============================
+(setq elpy-rpc-backend "jedi")
