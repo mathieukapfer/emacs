@@ -66,7 +66,7 @@
 
 
 ;; load project definition if exist
-(setq my-projects "/home/user/.emacs.d/lisp/my-projects.el")
+(setq my-projects (expand-file-name "~/.emacs.d/lisp/my-projects.el"))
 (if (file-exists-p my-projects)
     (load-file my-projects)
   )
@@ -116,7 +116,7 @@
 
 
 ;; code checker
-(load-file "/home/user/.emacs.d/init-ide-checker-flycheck.el")
+(load-file (expand-file-name "~/.emacs.d/init-ide-checker-flycheck.el"))
 
 
 ;; cmake support
